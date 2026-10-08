@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>BMD Compute</title>
+
+<style>
+
+:root {
+    --bmd-page-bg: #ffffff;
+    --bmd-surface: #ffffff;
+    --bmd-surface-secondary: #f7f9fc;
+    --bmd-surface-tertiary: #f0f0f0;
+    --bmd-text: #000000;
+    --bmd-text-muted: #6e6e6e;
+    --bmd-text-soft: #2f3337;
+    --bmd-border: #cbdce9;
+    --bmd-border-strong: #b0bdc8;
+    --bmd-accent: #1a126e;
+    --bmd-accent-hover: #1a6aff;
+    --bmd-accent-soft: #edf3ff;
+    --bmd-success: #39641d;
+    --bmd-advisory: #b58900;
+    --bmd-advisory-soft: #fff8df;
+    --bmd-warning: #ea6020;
+    --bmd-danger: #c94001;
+    --bmd-code-bg: #f7f9fc;
+    --bmd-code-text: #101418;
+    --bmd-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --bmd-plot-grid: #e3eaf0;
+    --bmd-plot-trace-primary: #1a6aff;
+    --bmd-plot-trace-secondary: #c94001;
+    --bmd-plot-trace-tertiary: #1a126e;
+    --bmd-plot-trace-quaternary: #618741;
+}
+
+body {
+    background: var(--bmd-page-bg);
+    color: var(--bmd-text);
+    font-family: madefor-text, Helvetica Neue, Arial, sans-serif;
+    margin: 0;
+}
+
+.container {
+    margin: 40px auto 56px;
+    max-width: 980px;
+    padding: 0 24px;
+}
+
+.header {
+    align-items: baseline;
+    border-bottom: 1px solid var(--bmd-border);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+}
+
+h1 {
+    font-size: 30px;
+    letter-spacing: 0;
+    line-height: 1.1;
+    margin: 0;
+}
+
+h2 {
+    color: var(--bmd-text);
+    font-size: 20px;
+    letter-spacing: 0;
+    margin: 0;
+}
+
+.subtitle {
+    color: var(--bmd-text-muted);
+    font-size: 14px;
+}
+
+.panel {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    box-shadow: var(--bmd-shadow);
+}
+
+.stage {
+    border-top: 1px solid var(--bmd-border);
+    padding: 26px 30px 30px;
+}
+
+.stage:first-child {
+    border-top: none;
+}
+
+.stage-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 18px;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.stage-title {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+.stage-number {
+    align-items: center;
+    background: var(--bmd-accent-soft);
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 50%;
+    color: var(--bmd-accent);
+    display: inline-flex;
+    font-size: 13px;
+    font-weight: 700;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+}
+
+.stage-status {
+    color: var(--bmd-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 3px;
+    text-align: right;
+}
+
+.summary-line {
+    color: var(--bmd-text-soft);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.metric-strip {
+    border-bottom: 1px solid var(--bmd-border);
+    border-top: 1px solid var(--bmd-border);
+    display: grid;
+    gap: 0;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 14px 0 18px;
+}
+
+.metric {
+    border-left: 1px solid var(--bmd-border);
+    min-width: 0;
+    padding: 14px 16px;
+}
+
+.metric:first-child {
+    border-left: none;
+}
+
+.metric-label {
+    color: var(--bmd-text-muted);
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.metric-value {
+    color: var(--bmd-text);
+    font-size: 17px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.method-considerations {
+    border-top: 1px solid var(--bmd-border);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.method-considerations h3 {
+    color: var(--bmd-text);
+    font-size: 16px;
+    margin: 0 0 12px;
+}
+
+.method-consideration-card {
+    background: var(--bmd-surface-secondary);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.method-consideration-card + .method-consideration-card {
+    margin-top: 12px;
+}
+
+.method-consideration-header {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.method-consideration-title {
+    align-items: center;
+    color: var(--bmd-text);
+    display: flex;
+    font-size: 16px;
+    font-weight: 700;
+    gap: 10px;
+}
+
+.method-consideration-summary {
+    color: var(--bmd-text-soft);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.form-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr 1fr;
+}
+
+.form-row {
+    margin-top: 18px;
+}
+
+.advanced-options-field {
+    grid-column: 1 / -1;
+}
+
+.applied-treatments-field {
+    grid-column: 1 / -1;
+}
+
+.applied-treatment-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.applied-treatment-chip {
+    background: var(--bmd-accent-soft);
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 999px;
+    color: var(--bmd-accent);
+    display: inline-flex;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.workflow-picker {
+    grid-column: 1 / -1;
+}
+
+.workflow-stage-list {
+    display: grid;
+    gap: 12px;
+    grid-column: 1 / -1;
+}
+
+.workflow-stage-card {
+    background: var(--bmd-surface-secondary);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.workflow-stage-card-header {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.workflow-stage-heading {
+    align-items: center;
+    color: var(--bmd-text-soft);
+    display: flex;
+    font-size: 13px;
+    font-weight: 700;
+    gap: 8px;
+}
+
+.workflow-stage-number {
+    align-items: center;
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 50%;
+    color: var(--bmd-accent);
+    display: inline-flex;
+    font-size: 12px;
+    height: 24px;
+    justify-content: center;
+    width: 24px;
+}
+
+.workflow-stage-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+}
+
+.workflow-controls {
+    grid-column: 1 / -1;
+}
+
+button.secondary-button {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border-strong);
+    color: var(--bmd-text-soft);
+    margin-top: 0;
+    width: auto;
+}
+
+button.secondary-button:hover {
+    background: var(--bmd-surface-secondary);
+    border-color: var(--bmd-accent-hover);
+    color: var(--bmd-accent);
+}
+
+label {
+    color: var(--bmd-text-soft);
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 7px;
+}
+
+input,
+select,
+textarea {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--bmd-text);
+    font-size: 15px;
+    padding: 11px;
+    width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--bmd-accent-hover);
+    outline: 2px solid var(--bmd-accent-soft);
+    outline-offset: 0;
+}
+
+textarea {
+    font-family: Consolas, monospace;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+button,
+a.button {
+    background: var(--bmd-accent);
+    border: none;
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 22px;
+    padding: 12px 16px;
+    text-align: center;
+    text-decoration: none;
+    width: 100%;
+}
+
+button:hover,
+a.button:hover {
+    background: var(--bmd-accent-hover);
+}
+
+button:disabled {
+    background: var(--bmd-surface-tertiary);
+    color: var(--bmd-text-muted);
+    cursor: not-allowed;
+}
+
+.hidden-field {
+    display: none;
+}
+
+.details-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 18px;
+}
+
+.details-wide {
+    grid-column: 1 / -1;
+}
+
+details.disclosure {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+details.disclosure > summary {
+    color: var(--bmd-text-soft);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    list-style-position: inside;
+    padding: 13px 14px;
+}
+
+details.disclosure[open] > summary {
+    border-bottom: 1px solid var(--bmd-border);
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td {
+    border-bottom: 1px solid var(--bmd-border);
+    padding: 11px 14px;
+    vertical-align: top;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+td:first-child {
+    color: var(--bmd-text-muted);
+    width: 210px;
+}
+
+.compact-table td {
+    padding: 9px 14px;
+}
+
+ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.mono {
+    font-family: Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.log-output {
+    font-family: Consolas, monospace;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.input-tabs {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-tabs > input[type="radio"] {
+    opacity: 0;
+    position: absolute;
+    width: auto;
+}
+
+.tab-labels {
+    border-bottom: 1px solid var(--bmd-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+}
+
+.tab-labels label {
+    border-right: 1px solid var(--bmd-border);
+    color: var(--bmd-text-soft);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0;
+    padding: 12px 16px;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.input-pane {
+    position: relative;
+}
+
+.input-copy-button {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 6px;
+    color: var(--bmd-text-soft);
+    font-size: 12px;
+    margin: 0;
+    padding: 7px 10px;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: auto;
+    z-index: 1;
+}
+
+.input-copy-button:hover {
+    background: var(--bmd-surface-secondary);
+    color: var(--bmd-text);
+}
+
+.input-copy-button.copied {
+    border-color: var(--bmd-success);
+    color: var(--bmd-success);
+}
+
+.input-copy-button.unsupported {
+    border-color: var(--bmd-danger);
+    color: var(--bmd-danger);
+}
+
+.workflow-visualization {
+    position: relative;
+}
+
+.plot-download-button {
+    right: 16px;
+    top: 16px;
+}
+
+#input-tab-incar:checked ~ .tab-labels label[for="input-tab-incar"],
+#input-tab-kpoints:checked ~ .tab-labels label[for="input-tab-kpoints"],
+#input-tab-poscar:checked ~ .tab-labels label[for="input-tab-poscar"],
+#input-tab-submission-summary:checked ~ .tab-labels label[for="input-tab-submission-summary"],
+#input-tab-slurm:checked ~ .tab-labels label[for="input-tab-slurm"] {
+    background: var(--bmd-accent-soft);
+    color: var(--bmd-accent);
+}
+
+#input-tab-incar:checked ~ .tab-panel-incar,
+#input-tab-kpoints:checked ~ .tab-panel-kpoints,
+#input-tab-poscar:checked ~ .tab-panel-poscar,
+#input-tab-submission-summary:checked ~ .tab-panel-submission-summary,
+#input-tab-slurm:checked ~ .tab-panel-slurm {
+    display: block;
+}
+
+.submission-summary-view {
+    padding: 20px;
+}
+
+.generated-input-diagnostics {
+    margin-top: 16px;
+}
+
+.submission-summary-note {
+    color: var(--bmd-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.submission-summary-grid {
+    display: grid;
+    gap: 24px 30px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.submission-summary-section h3 {
+    color: var(--bmd-text);
+    font-size: 15px;
+    margin: 0 0 8px;
+}
+
+.submission-summary-section td:first-child {
+    width: 125px;
+}
+
+.input-preview {
+    background: var(--bmd-code-bg);
+    color: var(--bmd-code-text);
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 0;
+    overflow-x: auto;
+    padding: 48px 16px 16px;
+    white-space: pre;
+}
+
+.pill {
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 999px;
+    color: var(--bmd-text-soft);
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 7px 10px;
+}
+
+.pill.ready {
+    border-color: var(--bmd-success);
+    color: var(--bmd-success);
+}
+
+.pill.failed {
+    border-color: var(--bmd-danger);
+    color: var(--bmd-danger);
+}
+
+.pill.warning {
+    border-color: var(--bmd-warning);
+    color: var(--bmd-warning);
+}
+
+.calculation-layout {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.configuration-grid {
+    align-items: start;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.configuration-panel {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.configuration-panel h3 {
+    color: var(--bmd-text);
+    font-size: 16px;
+    letter-spacing: 0;
+    margin: 0 0 14px;
+}
+
+.resource-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
+}
+
+.resource-grid .wide {
+    grid-column: 1 / -1;
+}
+
+.calculation-actions {
+    align-self: flex-start;
+}
+
+.calculation-actions button {
+    margin-top: 0;
+    min-width: 180px;
+    width: auto;
+}
+
+.calculation-layout.is-updating {
+    opacity: 0.72;
+}
+
+.settings-panel {
+    align-self: flex-start;
+    margin-top: 0;
+    max-width: 100%;
+    min-width: min(360px, 100%);
+}
+
+.settings-panel > summary {
+    min-height: 20px;
+}
+
+.option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+}
+
+.modifier-option {
+    align-items: center;
+    color: var(--bmd-text-soft);
+    display: flex;
+    font-size: 14px;
+    gap: 10px;
+    justify-content: flex-start;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.modifier-option.unavailable {
+    color: var(--bmd-text-muted);
+    cursor: not-allowed;
+}
+
+.option-list input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    width: auto;
+}
+
+.option-list input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+
+.callout {
+    background: var(--bmd-surface-secondary);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.callout-title {
+    color: var(--bmd-text-muted);
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.callout-value {
+    color: var(--bmd-text);
+    font-size: 16px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.submission-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin: 14px 0 18px;
+}
+
+.button-row {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 18px;
+}
+
+.button-row form,
+.button-row button {
+    margin: 0;
+}
+
+.prep-panel {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    margin-top: 18px;
+    padding: 16px;
+}
+
+.prep-panel.success {
+    border-color: var(--bmd-success);
+}
+
+.prep-panel.failed {
+    border-color: var(--bmd-danger);
+}
+
+.prep-panel.warning {
+    border-color: var(--bmd-warning);
+}
+
+.prep-title {
+    color: var(--bmd-text);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.prep-list {
+    display: grid;
+    gap: 9px;
+    list-style: none;
+    padding-left: 0;
+}
+
+.prep-list li {
+    align-items: center;
+    color: var(--bmd-text-soft);
+    display: flex;
+    gap: 10px;
+}
+
+.step-mark {
+    align-items: center;
+    border: 1px solid var(--bmd-border-strong);
+    border-radius: 50%;
+    color: var(--bmd-text-muted);
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 700;
+    height: 22px;
+    justify-content: center;
+    width: 22px;
+}
+
+.complete .step-mark {
+    border-color: var(--bmd-success);
+    color: var(--bmd-success);
+}
+
+.failed .step-mark {
+    border-color: var(--bmd-danger);
+    color: var(--bmd-danger);
+}
+
+.step-mark.advisory {
+    background: var(--bmd-advisory-soft);
+    border-color: var(--bmd-advisory);
+    color: var(--bmd-advisory);
+}
+
+.failure-table {
+    margin-top: 10px;
+}
+
+.entry-divider {
+    align-items: center;
+    color: var(--bmd-text-muted);
+    display: flex;
+    font-size: 12px;
+    font-weight: 700;
+    gap: 14px;
+    padding: 0 30px;
+}
+
+.entry-divider::before,
+.entry-divider::after {
+    background: var(--bmd-border);
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+
+.entry-label {
+    color: var(--bmd-text-muted);
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.structure-viewer {
+    background: var(--bmd-surface-secondary);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    height: 460px;
+    margin-top: 18px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.result-plot {
+    background: var(--bmd-surface);
+    border: 1px solid var(--bmd-border);
+    border-radius: 8px;
+    height: 420px;
+    margin-top: 14px;
+    min-height: 320px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.viewer-message {
+    color: var(--bmd-text-soft);
+    font-size: 14px;
+    padding: 18px;
+}
+
+.plot-message {
+    color: var(--bmd-text-soft);
+    font-size: 14px;
+    padding: 18px;
+}
+
+@media (max-width: 760px) {
+    .container {
+        margin-top: 22px;
+        padding: 0 14px;
+    }
+
+    .header,
+    .stage-header {
+        display: block;
+    }
+
+    .stage {
+        padding: 22px 18px 24px;
+    }
+
+    .stage-status {
+        margin-top: 8px;
+        text-align: left;
+    }
+
+    .metric-strip,
+    .details-grid,
+    .form-grid,
+    .configuration-grid,
+    .resource-grid,
+    .submission-grid,
+    .submission-summary-grid,
+    .button-row {
+        grid-template-columns: 1fr;
+    }
+
+    .structure-viewer {
+        height: 360px;
+    }
+
+    .result-plot {
+        height: 340px;
+    }
+
+    .metric,
+    .metric:first-child {
+        border-left: none;
+        border-top: 1px solid var(--bmd-border);
+    }
+
+    .metric:first-child {
+        border-top: none;
+    }
+
+    td:first-child {
+        width: 42%;
+    }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>BMD Compute</h1>
+
+        <div class="subtitle">
+            Browser-based VASP calculation interface
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <section class="stage">
+
+            <div class="stage-header">
+                <div>
+                    <h2>Resume Existing Calculation</h2>
+                    <div class="summary-line">Monitor an existing PowerSLURM job by SLURM job ID.</div>
+                </div>
+                <div class="stage-status">
+                    <span class="pill">Optional</span>
+                </div>
+            </div>
+
+            <form action="/resume" method="post">
+                <div class="form-row">
+                    <label>SLURM Job ID</label>
+                    <input
+                        name="job_id"
+                        placeholder="123456"
+                        value="">
+                </div>
+
+                <button type="submit">Resume</button>
+            </form>
+
+        </section>
+
+        <div class="entry-divider">OR</div>
+
+        <section class="stage">
+
+            <div class="entry-label">Start New Calculation</div>
+
+            <div class="stage-header">
+                <div>
+                    <div class="stage-title">
+                        <span class="stage-number">1</span>
+                        <h2>Structure</h2>
+                    </div>
+                    <div class="summary-line">Input format: POSCAR</div>
+                </div>
+                <div class="stage-status">
+                    <span class="pill ready">Analyzed</span>
+                </div>
+            </div>
+
+            <details
+                id="structure-input-details"
+                class="disclosure details-wide"
+                open>
+                <summary>Structure Input</summary>
+
+                <form action="/analyze" method="post">
+
+                    <div class="form-row">
+                        <label>Structure Format</label>
+                        <select name="fmt">
+                            <option value="poscar" selected>POSCAR</option>
+                            <option value="cif" >CIF</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Structure</label>
+                        <textarea
+                            name="structure"
+                            rows="14"
+                            placeholder="Paste your POSCAR or CIF here...">Si
+1.0
+0.0 2.715 2.715
+2.715 0.0 2.715
+2.715 2.715 0.0
+Si
+2
+direct
+0.00 0.00 0.00
+0.25 0.25 0.25
+</textarea>
+                    </div>
+
+                    <button type="submit">
+                        Analyze Structure
+                    </button>
+
+                </form>
+
+                
+            </details>
+
+        </section>
+
+        
+        <section class="stage">
+
+            <div class="stage-header">
+                <div>
+                    <div class="stage-title">
+                        <span class="stage-number">2</span>
+                        <h2>Structure Summary</h2>
+                    </div>
+                    <div class="summary-line">
+                        Si · 2 atoms · 40.026 Å³
+                    </div>
+                </div>
+                <div class="stage-status">
+                    Fd-3m
+                     #227
+                </div>
+            </div>
+
+            <div class="metric-strip">
+                <div class="metric">
+                    <div class="metric-label">Formula</div>
+                    <div class="metric-value">Si2</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Reduced</div>
+                    <div class="metric-value">Si</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Atoms</div>
+                    <div class="metric-value">2</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Volume</div>
+                    <div class="metric-value">40.026 Å³</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Density</div>
+                    <div class="metric-value">2.33 g/cm³</div>
+                </div>
+            </div>
+
+            <div class="details-grid">
+
+                <details class="disclosure">
+                    <summary>Lattice Parameters</summary>
+                    <table class="compact-table">
+                        <tr>
+                            <td>a (Å)</td>
+                            <td>3.8396</td>
+                        </tr>
+                        <tr>
+                            <td>b (Å)</td>
+                            <td>3.8396</td>
+                        </tr>
+                        <tr>
+                            <td>c (Å)</td>
+                            <td>3.8396</td>
+                        </tr>
+                    </table>
+                </details>
+
+                <details class="disclosure">
+                    <summary>Lattice Angles</summary>
+                    <table class="compact-table">
+                        <tr>
+                            <td>α (degrees)</td>
+                            <td>60.0</td>
+                        </tr>
+                        <tr>
+                            <td>β (degrees)</td>
+                            <td>60.0</td>
+                        </tr>
+                        <tr>
+                            <td>γ (degrees)</td>
+                            <td>60.0</td>
+                        </tr>
+                    </table>
+                </details>
+
+                <details class="disclosure">
+                    <summary>Symmetry</summary>
+                    <table class="compact-table">
+                        <tr>
+                            <td>Space Group Symbol</td>
+                            <td>Fd-3m</td>
+                        </tr>
+                        <tr>
+                            <td>Space Group Number</td>
+                            <td>227</td>
+                        </tr>
+                        <tr>
+                            <td>Crystal System</td>
+                            <td>cubic</td>
+                        </tr>
+                    </table>
+                </details>
+
+            </div>
+
+            
+
+        </section>
+
+        <section class="stage">
+
+            <div class="stage-header">
+                <div>
+                    <div class="stage-title">
+                        <span class="stage-number">3</span>
+                        <h2>Calculation Definition</h2>
+                    </div>
+                    <div class="summary-line">
+                        Configure the scientific specification and execution resources.
+                    </div>
+                </div>
+                <div class="stage-status">
+                    <span class="pill failed">Failed</span>
+                </div>
+            </div>
+
+            <form
+                id="calculation-review-form"
+                action="/build-calculation"
+                method="post">
+
+                <textarea class="hidden-field" name="structure">Si
+1.0
+0.0 2.715 2.715
+2.715 0.0 2.715
+2.715 2.715 0.0
+Si
+2
+direct
+0.00 0.00 0.00
+0.25 0.25 0.25
+</textarea>
+                <input type="hidden" name="fmt" value="poscar">
+
+                <div class="calculation-layout">
+                    <div class="configuration-grid">
+                        <div class="configuration-panel">
+                            <h3>Execution Resources</h3>
+                            <div class="resource-grid">
+                                <div>
+                                    <label>CPUs</label>
+                                    <select name="cpus">
+                                        
+                                        <option
+                                            value="24"
+                                            selected>
+                                            24
+                                        </option>
+                                        
+                                        <option
+                                            value="48"
+                                            >
+                                            48
+                                        </option>
+                                        
+                                        <option
+                                            value="72"
+                                            >
+                                            72
+                                        </option>
+                                        
+                                        <option
+                                            value="96"
+                                            >
+                                            96
+                                        </option>
+                                        
+                                        <option
+                                            value="120"
+                                            >
+                                            120
+                                        </option>
+                                        
+                                        <option
+                                            value="144"
+                                            >
+                                            144
+                                        </option>
+                                        
+                                        <option
+                                            value="168"
+                                            >
+                                            168
+                                        </option>
+                                        
+                                        <option
+                                            value="192"
+                                            >
+                                            192
+                                        </option>
+                                        
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Memory (GB)</label>
+                                    <select name="memory_gb">
+                                        
+                                        <option
+                                            value="32"
+                                            >
+                                            32 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="64"
+                                            >
+                                            64 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="96"
+                                            >
+                                            96 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="128"
+                                            selected>
+                                            128 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="160"
+                                            >
+                                            160 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="192"
+                                            >
+                                            192 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="224"
+                                            >
+                                            224 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="256"
+                                            >
+                                            256 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="320"
+                                            >
+                                            320 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="384"
+                                            >
+                                            384 GB
+                                        </option>
+                                        
+                                        <option
+                                            value="512"
+                                            >
+                                            512 GB
+                                        </option>
+                                        
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Walltime</label>
+                                    <input name="walltime" value="72:00:00">
+                                </div>
+                                <div>
+                                    <label>Queue</label>
+                                    <select name="queue">
+                                        
+                                        <option
+                                            value="leeburton-pool"
+                                            selected>
+                                            leeburton-pool
+                                        </option>
+                                        
+                                    </select>
+                                </div>
+                                <input
+                                    type="hidden"
+                                    name="nodes"
+                                    value="1">
+                            </div>
+                        </div>
+
+                        <div class="configuration-panel">
+                            <h3>Scientific Specification</h3>
+                            <input
+                                type="hidden"
+                                id="workflow-spec-json"
+                                name="workflow_spec_json"
+                                value="{&#34;label&#34;: null, &#34;recipe&#34;: &#34;energy_only&#34;, &#34;stages&#34;: [{&#34;label&#34;: null, &#34;modifiers&#34;: [], &#34;options&#34;: {}, &#34;stage_type&#34;: &#34;static&#34;, &#34;theory&#34;: &#34;pbe&#34;}]}">
+                            <script type="application/json" id="calculation-stage-options">{"desired_outputs": [{"description": "Calculate a PBE static total energy.", "label": "Energy only", "value": "energy_only", "workflow_spec": {"label": null, "recipe": "energy_only", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "pbe"}]}}, {"description": "Run two successive PBE geometry optimisations for the final relaxed structure.", "label": "Relaxed structure", "value": "relaxed_structure", "workflow_spec": {"label": null, "recipe": "relaxed_structure", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}]}}, {"description": "Use BMD Compute\u0027s default staged workflow for an HSE06 density of states.", "label": "Electronic density of states", "value": "electronic_dos", "workflow_spec": {"label": null, "recipe": "electronic_dos", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "hse06"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "dos", "theory": "hse06"}]}}, {"description": "Use BMD Compute\u0027s default staged workflow for an HSE06 band structure.", "label": "Electronic band structure", "value": "electronic_band_structure", "workflow_spec": {"label": null, "recipe": "electronic_band_structure", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "hse06"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "band_structure", "theory": "hse06"}]}}, {"description": "Configure stages and theories explicitly.", "label": "Custom workflow", "value": "custom", "workflow_spec": null}], "modifiers": [{"enabled": true, "label": "Spin Polarised", "tooltip": "", "value": "spin_polarized"}, {"enabled": true, "label": "Spin-Orbit Coupling (SOC)", "tooltip": "SOC is available for PBE and HSE06 Static Energy stages and HSE06 Density of States and Band Structure stages, and runs with vasp_ncl.", "value": "soc"}, {"enabled": true, "label": "DFT+U", "tooltip": "DFT+U is applied only when explicitly selected.", "value": "dft_u"}, {"enabled": true, "label": "van der Waals correction", "tooltip": "van der Waals correction for PBE Geometry Optimisation and Static Energy stages.", "value": "dispersion"}], "purposes": [{"description": "Optimise the atomic structure before analysis or follow-up calculations.", "enabled": true, "label": "Geometry Optimisation", "value": "relax"}, {"description": "Optimise the structure and then calculate a final static energy.", "enabled": true, "label": "Geometry Optimisation + Static Energy", "value": "relax_static"}, {"description": "Run two consecutive geometry optimisations, using the first final structure as the second starting structure.", "enabled": true, "label": "Double Geometry Optimisation", "value": "double_relax"}, {"description": "Calculate a single-point total energy for the supplied structure.", "enabled": true, "label": "Static Energy", "value": "static"}, {"description": "Calculate the electronic density of states.", "enabled": true, "label": "Density of States", "value": "dos"}, {"description": "Calculate the electronic band structure.", "enabled": true, "label": "Band Structure", "value": "band_structure"}], "recipes": [{"description": "Optimise the supplied structure.", "label": "Geometry Optimisation", "value": "relax", "workflow_spec": {"label": null, "recipe": "relax", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}]}}, {"description": "Calculate a single-point total energy.", "label": "Static Energy", "value": "static", "workflow_spec": {"label": null, "recipe": "static", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "pbe"}]}}, {"description": "Optimise the structure, then calculate a final static energy.", "label": "Geometry Optimisation + Static Energy", "value": "relax_static", "workflow_spec": {"label": null, "recipe": "relax_static", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "pbe"}]}}, {"description": "Run two consecutive geometry optimisations.", "label": "Double Geometry Optimisation", "value": "double_relax", "workflow_spec": {"label": null, "recipe": "double_relax", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}]}}, {"description": "Optimise, run a static calculation, then calculate the density of states.", "label": "Density of States", "value": "dos", "workflow_spec": {"label": null, "recipe": "dos", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "dos", "theory": "pbe"}]}}, {"description": "Optimise, run a static calculation, then calculate the band structure.", "label": "Band Structure", "value": "band_structure", "workflow_spec": {"label": null, "recipe": "band_structure", "stages": [{"label": null, "modifiers": [], "options": {}, "stage_type": "relax", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "static", "theory": "pbe"}, {"label": null, "modifiers": [], "options": {}, "stage_type": "band_structure", "theory": "pbe"}]}}], "stage_types": [{"description": "Optimise the atomic structure.", "label": "Geometry Optimisation", "value": "relax"}, {"description": "Calculate a converged single-point total energy.", "label": "Static Energy", "value": "static"}, {"description": "Calculate the electronic density of states after a static calculation.", "label": "Density of States", "value": "dos"}, {"description": "Calculate the electronic band structure after a static calculation.", "label": "Band Structure", "value": "band_structure"}], "theories": [{"enabled": true, "label": "PBE", "value": "pbe"}, {"enabled": true, "label": "HSE06", "value": "hse06"}]}</script>
+                            <div class="form-grid">
+                                <div class="workflow-picker">
+                                    <label>Desired Output</label>
+                                    <select id="desired-output-select" name="workflow">
+                                        
+                                        <option
+                                            value="energy_only"
+                                            selected>
+                                            Energy only
+                                        </option>
+                                        
+                                        <option
+                                            value="relaxed_structure"
+                                            >
+                                            Relaxed structure
+                                        </option>
+                                        
+                                        <option
+                                            value="electronic_dos"
+                                            >
+                                            Electronic density of states
+                                        </option>
+                                        
+                                        <option
+                                            value="electronic_band_structure"
+                                            >
+                                            Electronic band structure
+                                        </option>
+                                        
+                                        <option
+                                            value="custom"
+                                            >
+                                            Custom workflow
+                                        </option>
+                                        
+                                    </select>
+                                </div>
+
+                                <div class="workflow-stage-list" id="workflow-stage-list">
+                                    
+                                    
+                                    <div class="workflow-stage-card" data-workflow-stage>
+                                        <div class="workflow-stage-card-header">
+                                            <div class="workflow-stage-heading">
+                                                <span class="workflow-stage-number" data-stage-number>1</span>
+                                                <span>BMD Compute workflow</span>
+                                            </div>
+                                            <button type="button" class="secondary-button" data-remove-stage hidden>Remove</button>
+                                        </div>
+                                        <div class="workflow-stage-grid">
+                                            <div>
+                                                <label>Calculation Type</label>
+                                                <select data-stage-type disabled>
+                                                    
+                                                    <option
+                                                        value="relax"
+                                                        >
+                                                        Geometry Optimisation
+                                                    </option>
+                                                    
+                                                    <option
+                                                        value="static"
+                                                        selected>
+                                                        Static Energy
+                                                    </option>
+                                                    
+                                                    <option
+                                                        value="dos"
+                                                        >
+                                                        Density of States
+                                                    </option>
+                                                    
+                                                    <option
+                                                        value="band_structure"
+                                                        >
+                                                        Band Structure
+                                                    </option>
+                                                    
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label>Level of Theory</label>
+                                                <select data-stage-theory disabled>
+                                                    
+                                                    <option
+                                                        value="pbe"
+                                                        selected
+                                                        >
+                                                        PBE
+                                                    </option>
+                                                    
+                                                    <option
+                                                        value="hse06"
+                                                        
+                                                        >
+                                                        HSE06
+                                                    </option>
+                                                    
+                                                </select>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+
+                                <div class="workflow-controls">
+                                    <button type="button" class="secondary-button" id="add-workflow-stage" hidden>Add Stage</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="calculation-actions">
+                        <button type="submit" data-build-calculation-button>
+                            Build Calculation
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+
+            
+            <div class="prep-panel failed">
+                <div class="prep-title">Calculation Validation Failed</div>
+                <table class="compact-table failure-table">
+                    <tr>
+                        <td>Reason</td>
+                        <td>Unsupported legacy workflow: &#39;dso&#39;</td>
+                    </tr>
+                    
+                </table>
+            </div>
+            
+
+        </section>
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var resetDelayMs = 2000;
+
+    function setButtonState(button, label, stateClass) {
+        button.textContent = label;
+        button.classList.remove("copied", "unsupported");
+        if (stateClass) {
+            button.classList.add(stateClass);
+        }
+        window.clearTimeout(button.dataset.copyResetTimer);
+        button.dataset.copyResetTimer = window.setTimeout(function () {
+            button.textContent = "Copy";
+            button.classList.remove("copied", "unsupported");
+        }, resetDelayMs);
+    }
+
+    function copyTextWithSelectionFallback(text) {
+        return new Promise(function (resolve, reject) {
+            var textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.setAttribute("aria-hidden", "true");
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+            textarea.style.top = "0";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+
+            try {
+                if (document.execCommand && document.execCommand("copy")) {
+                    resolve();
+                } else {
+                    reject(new Error("Fallback copy command failed."));
+                }
+            } catch (error) {
+                reject(error);
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        });
+    }
+
+    function copyTextToClipboard(text) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            return navigator.clipboard.writeText(text).catch(function () {
+                return copyTextWithSelectionFallback(text);
+            });
+        }
+        return copyTextWithSelectionFallback(text);
+    }
+
+    document.querySelectorAll("[data-copy-input]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            var pane = button.closest(".input-pane");
+            var preview = pane ? pane.querySelector(".input-preview") : null;
+            var text = preview ? preview.textContent : "";
+
+            copyTextToClipboard(text).then(function () {
+                setButtonState(button, "\u2713 Copied", "copied");
+            }).catch(function () {
+                setButtonState(button, "Copy failed", "unsupported");
+            });
+        });
+    });
+});
+</script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("calculation-review-form");
+    var hiddenWorkflow = document.getElementById("workflow-spec-json");
+    var optionsElement = document.getElementById("calculation-stage-options");
+    var stageList = document.getElementById("workflow-stage-list");
+    var desiredOutputSelect = document.getElementById("desired-output-select");
+    var addStageButton = document.getElementById("add-workflow-stage");
+    if (!form || !hiddenWorkflow || !optionsElement || !stageList) {
+        return;
+    }
+
+    var options = {};
+    try {
+        options = JSON.parse(optionsElement.textContent);
+    } catch (err) {
+        options = {};
+    }
+
+    var stageTypes = options.stage_types || [];
+    var theories = options.theories || [];
+    var modifiers = options.modifiers || [];
+    var desiredOutputs = options.desired_outputs || [];
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    function optionMarkup(items, selectedValue) {
+        return items.map(function (item) {
+            var selected = item.value === selectedValue ? " selected" : "";
+            var disabled = item.enabled === false ? " disabled" : "";
+            return '<option value="' + escapeHtml(item.value) + '"' + selected + disabled + '>' +
+                escapeHtml(item.label) +
+                '</option>';
+        }).join("");
+    }
+
+    function modifierMarkup(selectedValues) {
+        var selected = {};
+        (selectedValues || []).forEach(function (value) {
+            selected[value] = true;
+        });
+        return modifiers.map(function (modifier) {
+            var checked = selected[modifier.value] ? " checked" : "";
+            var disabled = modifier.enabled === false ? " disabled" : "";
+            var unavailable = modifier.enabled === false ? " unavailable" : "";
+            var title = modifier.tooltip ? ' title="' + escapeHtml(modifier.tooltip) + '"' : "";
+            return '<label class="modifier-option' + unavailable + '"' + title + '>' +
+                '<input type="checkbox" data-stage-modifier value="' + escapeHtml(modifier.value) + '"' + checked + disabled + '>' +
+                '<span>' + escapeHtml(modifier.label) + '</span>' +
+                '</label>';
+        }).join("");
+    }
+
+    function modifierLabel(value) {
+        for (var index = 0; index < modifiers.length; index += 1) {
+            if (modifiers[index].value === value) {
+                return modifiers[index].label;
+            }
+        }
+        return value;
+    }
+
+    function appliedTreatmentMarkup(selectedModifiers) {
+        if (!selectedModifiers || selectedModifiers.length === 0) {
+            return "";
+        }
+        return '<div class="applied-treatments-field">' +
+            '<label>Applied Treatments</label>' +
+            '<div class="applied-treatment-list">' +
+                selectedModifiers.map(function (modifier) {
+                    return '<span class="applied-treatment-chip">' +
+                        escapeHtml(modifierLabel(modifier)) +
+                        '</span>';
+                }).join("") +
+            '</div>' +
+        '</div>';
+    }
+
+    function isCustomWorkflow() {
+        return !desiredOutputSelect || desiredOutputSelect.value === "custom";
+    }
+
+    function stageMarkup(stage, index) {
+        var stageType = stage.stage_type || "static";
+        var theory = stage.theory || "pbe";
+        var selectedModifiers = stage.modifiers || [];
+        var editableWorkflow = isCustomWorkflow();
+        var stageControlDisabled = editableWorkflow ? "" : " disabled";
+        var workflowLabel = editableWorkflow ? "Custom Workflow" : "BMD Compute workflow";
+        var removeButton = editableWorkflow
+            ? '<button type="button" class="secondary-button" data-remove-stage>Remove</button>'
+            : "";
+        var treatmentMarkup = editableWorkflow
+            ? '<div class="advanced-options-field">' +
+                '<label>Advanced Options</label>' +
+                '<details class="disclosure settings-panel">' +
+                    '<summary aria-label="Toggle advanced options"></summary>' +
+                    '<div class="option-list">' + modifierMarkup(selectedModifiers) + '</div>' +
+                '</details>' +
+            '</div>'
+            : appliedTreatmentMarkup(selectedModifiers);
+        return '<div class="workflow-stage-card" data-workflow-stage>' +
+            '<div class="workflow-stage-card-header">' +
+                '<div class="workflow-stage-heading">' +
+                    '<span class="workflow-stage-number" data-stage-number>' + String(index + 1) + '</span>' +
+                    '<span>' + workflowLabel + '</span>' +
+                '</div>' +
+                removeButton +
+            '</div>' +
+            '<div class="workflow-stage-grid">' +
+                '<div>' +
+                    '<label>Calculation Type</label>' +
+                    '<select data-stage-type' + stageControlDisabled + '>' + optionMarkup(stageTypes, stageType) + '</select>' +
+                '</div>' +
+                '<div>' +
+                    '<label>Level of Theory</label>' +
+                    '<select data-stage-theory' + stageControlDisabled + '>' + optionMarkup(theories, theory) + '</select>' +
+                '</div>' +
+                treatmentMarkup +
+            '</div>' +
+        '</div>';
+    }
+
+    function readStages() {
+        return Array.prototype.map.call(
+            stageList.querySelectorAll("[data-workflow-stage]"),
+            function (card) {
+                var stageType = card.querySelector("[data-stage-type]");
+                var theory = card.querySelector("[data-stage-theory]");
+                var selectedModifiers = Array.prototype.filter.call(
+                    card.querySelectorAll("[data-stage-modifier]"),
+                    function (input) {
+                        return input.checked && !input.disabled;
+                    }
+                ).map(function (input) {
+                    return input.value;
+                });
+                return {
+                    stage_type: stageType ? stageType.value : "static",
+                    theory: theory ? theory.value : "pbe",
+                    modifiers: selectedModifiers,
+                    label: null,
+                    options: {}
+                };
+            }
+        );
+    }
+
+    function updateStageNumbers() {
+        Array.prototype.forEach.call(
+            stageList.querySelectorAll("[data-stage-number]"),
+            function (numberElement, index) {
+                numberElement.textContent = String(index + 1);
+            }
+        );
+    }
+
+    function updateHiddenWorkflow() {
+        updateStageNumbers();
+        if (addStageButton) {
+            addStageButton.hidden = !isCustomWorkflow();
+        }
+        hiddenWorkflow.value = JSON.stringify({
+            stages: readStages(),
+            label: null,
+            recipe: desiredOutputSelect && desiredOutputSelect.value !== "custom" ? desiredOutputSelect.value : null
+        });
+    }
+
+    function renderStages(stages) {
+        stageList.innerHTML = (stages || []).map(stageMarkup).join("");
+        updateHiddenWorkflow();
+    }
+
+    stageList.addEventListener("change", updateHiddenWorkflow);
+    stageList.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-remove-stage]");
+        if (!button) {
+            return;
+        }
+        var card = button.closest("[data-workflow-stage]");
+        if (card) {
+            card.remove();
+            if (!stageList.querySelector("[data-workflow-stage]")) {
+                renderStages([{ stage_type: "static", theory: "pbe", modifiers: [], label: null, options: {} }]);
+            } else {
+                updateHiddenWorkflow();
+            }
+        }
+    });
+
+    if (desiredOutputSelect) {
+        desiredOutputSelect.addEventListener("change", function () {
+            if (isCustomWorkflow()) {
+                renderStages(readStages());
+                return;
+            }
+            for (var index = 0; index < desiredOutputs.length; index += 1) {
+                if (desiredOutputs[index].value === desiredOutputSelect.value) {
+                    renderStages((desiredOutputs[index].workflow_spec || {}).stages || []);
+                    return;
+                }
+            }
+            updateHiddenWorkflow();
+        });
+    }
+
+    if (addStageButton) {
+        addStageButton.addEventListener("click", function () {
+            var stages = readStages();
+            stages.push({ stage_type: "static", theory: "pbe", modifiers: [], label: null, options: {} });
+            renderStages(stages);
+        });
+    }
+
+    form.addEventListener("submit", updateHiddenWorkflow);
+    updateHiddenWorkflow();
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var prepareForms = document.querySelectorAll('form[action="/prepare-remote"]');
+    prepareForms.forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            var button = form.querySelector("[data-prepare-remote-button]");
+            if (!button || button.disabled) {
+                return;
+            }
+            if (form.dataset.preparing === "true") {
+                event.preventDefault();
+                return;
+            }
+            form.dataset.preparing = "true";
+            button.disabled = true;
+            button.textContent = "Preparing...";
+        });
+    });
+
+    var submitForms = document.querySelectorAll('form[action="/submit"]');
+    submitForms.forEach(function (form) {
+        form.addEventListener("submit", function () {
+            var button = form.querySelector("[data-submit-calculation-button]");
+            if (!button || button.disabled) {
+                return;
+            }
+            button.disabled = true;
+            button.textContent = "Submitting...";
+        });
+    });
+});
+</script>
+
+
+
+</body>
+
+</html>

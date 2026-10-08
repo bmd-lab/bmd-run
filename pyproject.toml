@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bmd-run"
+version = "0.1.0"
+description = "Restricted read/build-only user-level client for bmd-compute (frozen v1.0.0 proof of concept)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Lee A. Burton"},
+]
+maintainers = [
+    {name = "Lee A. Burton", email = "leeburton@tauex.tau.ac.il"},
+]
+keywords = ["materials-science", "vasp", "hpc", "bmd"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+# Standard library only. tests/test_security_boundary.py fails if this changes.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/bmd-lab/bmd-run"
+Repository = "https://github.com/bmd-lab/bmd-run"
+Issues = "https://github.com/bmd-lab/bmd-run/issues"
+
+[project.scripts]
+bmd-run = "bmd_run.cli:entry_point"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+bmd_run = ["schemas/*.json"]

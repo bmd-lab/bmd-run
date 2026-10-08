@@ -1,0 +1,64 @@
+{
+  "description": "SHA-256 of each committed fixture, raw and after normalisations N1-N4 (tools/fixtures_v1.py). Regenerate only after an intentional re-recording.",
+  "files": {
+    "NiO.POSCAR": {
+      "sha256": "f7c469390c2b067ea27748b72c9e7f76a5a60a4dc7012acc4d2cad9d14e16691"
+    },
+    "Si.POSCAR": {
+      "sha256": "200b6cc3ba54679a37af83ac12cc8b021699d8239732dbbf0e5958d60a990e38"
+    },
+    "analyze_bad.html": {
+      "normalised_sha256": "18d2376fa5ed0a0cd31370d16c6081c43242cdcfb105d33e7d6f80a065c54c03",
+      "sha256": "18d2376fa5ed0a0cd31370d16c6081c43242cdcfb105d33e7d6f80a065c54c03"
+    },
+    "analyze_nio.html": {
+      "normalised_sha256": "6747df28e1f27a69479a45f284b517f342e51f4b3938e76db04a488de434902a",
+      "sha256": "6747df28e1f27a69479a45f284b517f342e51f4b3938e76db04a488de434902a"
+    },
+    "analyze_si.html": {
+      "normalised_sha256": "c362a09830c0d6c170d04c702bba35730a243a931d600c0481531a546d66174a",
+      "sha256": "c362a09830c0d6c170d04c702bba35730a243a931d600c0481531a546d66174a"
+    },
+    "build_nio_electronic_dos.html": {
+      "normalised_sha256": "ec1a2d8efef4d96be643e44c2f55acda78143cd713e83dc41a401125025ea26a",
+      "sha256": "cac551e481c691325d4ad7fa5ceafe7ee25c4298c04627dc36f3e5b70d90293f"
+    },
+    "build_si_badcpus.html": {
+      "normalised_sha256": "8e77169ec0bc35a7633260b12a0d08e5acd33e9b063bb77a51a7ba30ba27326b",
+      "sha256": "8e77169ec0bc35a7633260b12a0d08e5acd33e9b063bb77a51a7ba30ba27326b"
+    },
+    "build_si_electronic_band_structure.html": {
+      "normalised_sha256": "5b4d4c59ab3e1ba672fd8bbc7abcd21abcf7811d7cc25016b6da971cef36af80",
+      "sha256": "c1abec06eeefea1ffd6af3578c02ed517be6862b586d89efe7462fdd603b5e00"
+    },
+    "build_si_electronic_dos.html": {
+      "normalised_sha256": "485af8b104df7153e9371b05f160e0b1d4fc8621d52dc787e3d62839dfd7637f",
+      "sha256": "8af9f161b2a9e106025395df07ad89a5a223f0b83d1e80f4d8aef023dc985342"
+    },
+    "build_si_energy_only.html": {
+      "normalised_sha256": "b29a1d5ca922327e758531288c1ae2368b98e18b47a46b2a02f10fbc470e7b77",
+      "sha256": "d8048f86ea5ed6b1dfa8370546f62240f0c62f654c680227db1f24ca479d2d37"
+    },
+    "build_si_relaxed_structure.html": {
+      "normalised_sha256": "5dfe38abb0deee430948f9454790b3c57e75ef33fc0642976239f309884bb8b6",
+      "sha256": "cd61c30da7619423fd886bc8a053bff9f28d91225f72b676a3bd3dda763b18e7"
+    },
+    "build_si_unknown.html": {
+      "normalised_sha256": "5410a7b9589c94341d55eaea437f2c31b5a72e11ea063a67323685fec16dc5b9",
+      "sha256": "5410a7b9589c94341d55eaea437f2c31b5a72e11ea063a67323685fec16dc5b9"
+    },
+    "cases.json": {
+      "sha256": "b7b7a4458fe0d87b54c7940e0e2743443498dff691416770cbc2e69f72f55ac1"
+    },
+    "openapi.json": {
+      "normalised_sha256": "d3af711a99c084f45250c251cfeda89537c671824ab2aa75258d689c6e0b31e3",
+      "sha256": "d3af711a99c084f45250c251cfeda89537c671824ab2aa75258d689c6e0b31e3"
+    }
+  },
+  "normalisations": [
+    "N1",
+    "N2",
+    "N3",
+    "N4"
+  ]
+}

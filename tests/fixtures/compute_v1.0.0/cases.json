@@ -1,0 +1,18 @@
+{
+  "description": "Requests that produce the recorded BMD Compute v1.0.0 fixtures. Read by tools/fixtures_v1.py. '@NAME' means the contents of fixture file NAME.",
+  "compute_release": "v1.0.0",
+  "compute_commit": "a746155b487f903a167eca6b3c92e860aaf8c7f5",
+  "cases": [
+    {"file": "openapi.json", "endpoint": "OPENAPI", "form": {}, "status": 200},
+    {"file": "analyze_si.html", "endpoint": "ANALYZE", "form": {"structure": "@Si.POSCAR", "fmt": "poscar"}, "status": 200},
+    {"file": "analyze_nio.html", "endpoint": "ANALYZE", "form": {"structure": "@NiO.POSCAR", "fmt": "poscar"}, "status": 200},
+    {"file": "analyze_bad.html", "endpoint": "ANALYZE", "form": {"structure": "not a poscar", "fmt": "poscar"}, "status": 400},
+    {"file": "build_si_energy_only.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "energy_only"}, "status": 200},
+    {"file": "build_si_relaxed_structure.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "relaxed_structure"}, "status": 200},
+    {"file": "build_si_electronic_dos.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "electronic_dos"}, "status": 200},
+    {"file": "build_si_electronic_band_structure.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "electronic_band_structure"}, "status": 200},
+    {"file": "build_nio_electronic_dos.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@NiO.POSCAR", "fmt": "poscar", "workflow": "electronic_dos"}, "status": 200},
+    {"file": "build_si_badcpus.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "energy_only", "cpus": "7"}, "status": 400},
+    {"file": "build_si_unknown.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "dso"}, "status": 400}
+  ]
+}

@@ -1,0 +1,1189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bmd_run.output/3",
+  "title": "BMD Run output document, schema version 3",
+  "description": "Emitted on stdout by every bmd-run command run with --json, on success and on error. Every object is closed. Every string in 'result' and 'error' is a client constant, a member of the client's closed BMD Compute v1.0.0 vocabulary, or rendered by the client from bounded numbers; no Compute-originated text is relayed. Version 3 replaces versions 1 and 2, which relayed Compute text.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schema_version",
+    "client",
+    "command",
+    "ok",
+    "compute",
+    "request",
+    "result",
+    "error",
+    "warnings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "bmd_run.output"
+    },
+    "schema_version": {
+      "const": 3
+    },
+    "client": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "const": "bmd-run"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "command": {
+      "enum": [
+        "identity",
+        "options",
+        "analyze",
+        "plan",
+        null
+      ]
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "compute": {
+      "type": "object",
+      "required": [
+        "base_url",
+        "adapter",
+        "adapter_status",
+        "reference_release",
+        "reference_commit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "adapter": {
+          "const": "compute_v1_html"
+        },
+        "adapter_status": {
+          "const": "transitional"
+        },
+        "reference_release": {
+          "type": "string"
+        },
+        "reference_commit": {
+          "type": "string"
+        }
+      }
+    },
+    "request": {
+      "description": "Echo of the user's own request (never Compute data).",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "structure_file": {
+              "type": "string"
+            },
+            "format": {
+              "enum": [
+                "poscar",
+                "cif"
+              ]
+            },
+            "structure_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "desired_output": {
+              "type": "string"
+            },
+            "desired_output_as_typed": {
+              "type": "string"
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cpus": {
+                  "type": "string"
+                },
+                "memory_gb": {
+                  "type": "string"
+                },
+                "walltime": {
+                  "type": "string"
+                },
+                "queue": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "error": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "message",
+            "suggestion",
+            "http_status",
+            "compute_stage"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "usage_error",
+                "compute_unreachable",
+                "compute_rejected",
+                "unexpected_response",
+                "client_error"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "suggestion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "http_status": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "compute_stage": {
+              "enum": [
+                "structure_validation",
+                "calculation_validation",
+                "unrecognized",
+                null
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "type": "null"
+          },
+          "error": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "null"
+          },
+          "result": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "command": {
+            "const": "identity"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/identity_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "command": {
+            "const": "options"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/options_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "command": {
+            "const": "analyze"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/analyze_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "command": {
+            "const": "plan"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/plan_result"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "workflow": {
+      "type": "object",
+      "required": [
+        "desired_output",
+        "stages"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "desired_output": {
+          "enum": [
+            "energy_only",
+            "relaxed_structure",
+            "electronic_dos",
+            "electronic_band_structure",
+            "custom"
+          ]
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage"
+          }
+        }
+      }
+    },
+    "consideration": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "spin.composition_screen",
+            "dftu.mp_oxide_fluoride",
+            "soc.heavy_elements",
+            "dispersion.two_dimensional_connectivity",
+            null
+          ]
+        },
+        "label": {
+          "enum": [
+            "Spin polarisation",
+            "DFT+U",
+            "Spin-orbit coupling",
+            "Dispersion correction",
+            null
+          ]
+        },
+        "status": {
+          "enum": [
+            "applied",
+            "not_applied_automatically",
+            "advisory",
+            "unrecognized"
+          ]
+        }
+      }
+    },
+    "identity_result": {
+      "type": "object",
+      "required": [
+        "kind",
+        "verified_source_identity",
+        "statement",
+        "reference",
+        "algorithm",
+        "probes",
+        "matches_reference"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "behavioural_fingerprint"
+        },
+        "verified_source_identity": {
+          "const": false
+        },
+        "statement": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "object",
+          "required": [
+            "release",
+            "commit",
+            "recorded_from"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "release": {
+              "type": "string"
+            },
+            "commit": {
+              "type": "string"
+            },
+            "recorded_from": {
+              "type": "string"
+            }
+          }
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "probes": {
+          "type": "object",
+          "required": [
+            "openapi_surface",
+            "option_catalogue",
+            "probe_energy_plan"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "openapi_surface": {
+              "$ref": "#/$defs/probe"
+            },
+            "option_catalogue": {
+              "$ref": "#/$defs/probe"
+            },
+            "probe_energy_plan": {
+              "$ref": "#/$defs/probe"
+            }
+          }
+        },
+        "matches_reference": {
+          "type": "boolean"
+        }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "required": [
+        "observed_sha256",
+        "reference_sha256",
+        "matches_reference"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "observed_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reference_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "matches_reference": {
+          "type": "boolean"
+        }
+      }
+    },
+    "options_result": {
+      "type": "object",
+      "required": [
+        "source",
+        "catalogue_sha256",
+        "catalogue"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "catalogue_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "catalogue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "desired_outputs",
+            "stage_types",
+            "theories",
+            "modifiers",
+            "unrecognized_entry_count"
+          ],
+          "properties": {
+            "desired_outputs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "value",
+                  "label",
+                  "default_stages"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "value": {
+                    "enum": [
+                      "energy_only",
+                      "relaxed_structure",
+                      "electronic_dos",
+                      "electronic_band_structure",
+                      "custom"
+                    ]
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "default_stages": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/stage"
+                    }
+                  }
+                }
+              }
+            },
+            "stage_types": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/catalogue_entry"
+              }
+            },
+            "theories": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/catalogue_entry"
+              }
+            },
+            "modifiers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/catalogue_entry"
+              }
+            },
+            "unrecognized_entry_count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "analyze_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "structure",
+        "method_considerations",
+        "default_workflow",
+        "unavailable_from_v1_machine_interface"
+      ],
+      "properties": {
+        "structure": {
+          "$ref": "#/$defs/structure"
+        },
+        "method_considerations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/consideration"
+          }
+        },
+        "default_workflow": {
+          "$ref": "#/$defs/workflow"
+        },
+        "unavailable_from_v1_machine_interface": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "method_consideration_text",
+              "structure_summary_headline",
+              "space_group_symbol"
+            ]
+          }
+        }
+      }
+    },
+    "plan_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resolved_workflow",
+        "resources",
+        "status",
+        "method_considerations",
+        "structure",
+        "generated_inputs",
+        "unavailable_from_v1_machine_interface"
+      ],
+      "properties": {
+        "resolved_workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "desired_output",
+            "stage_count",
+            "stages"
+          ],
+          "properties": {
+            "desired_output": {
+              "enum": [
+                "energy_only",
+                "relaxed_structure",
+                "electronic_dos",
+                "electronic_band_structure",
+                "custom"
+              ]
+            },
+            "stage_count": {
+              "type": "integer"
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/stage"
+              }
+            }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "partition",
+            "account",
+            "cpus",
+            "nodes",
+            "memory_gb",
+            "walltime"
+          ],
+          "properties": {
+            "partition": {
+              "enum": [
+                "leeburton-pool",
+                null
+              ]
+            },
+            "account": {
+              "enum": [
+                "power-leeburton-users_v2",
+                null
+              ]
+            },
+            "cpus": {
+              "type": "integer"
+            },
+            "nodes": {
+              "type": "integer"
+            },
+            "memory_gb": {
+              "type": "integer"
+            },
+            "walltime": {
+              "type": "string",
+              "pattern": "^[0-9]{2,3}:[0-9]{2}:[0-9]{2}$"
+            }
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "method_considerations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/consideration"
+          }
+        },
+        "structure": {
+          "$ref": "#/$defs/structure"
+        },
+        "generated_inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "note",
+            "stages"
+          ],
+          "properties": {
+            "note": {
+              "type": "string"
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "incar",
+                  "kpoints",
+                  "kpoints_text"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer"
+                  },
+                  "incar": {
+                    "$ref": "#/$defs/incar"
+                  },
+                  "kpoints": {
+                    "$ref": "#/$defs/kpoints"
+                  },
+                  "kpoints_text": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "unavailable_from_v1_machine_interface": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "method_consideration_text",
+              "structure_summary_headline",
+              "space_group_symbol",
+              "compute_stage_display_text",
+              "calculation_plan_text",
+              "incar_comments",
+              "opaque_incar_tags",
+              "kpoints_comments",
+              "explicit_kpoint_coordinates",
+              "poscar_preview",
+              "submission_scripts",
+              "execution_paths_and_modules"
+            ]
+          }
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "required": [
+        "index",
+        "stage_type",
+        "theory",
+        "modifiers",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "stage_type": {
+          "enum": [
+            "relax",
+            "static",
+            "dos",
+            "band_structure"
+          ]
+        },
+        "theory": {
+          "enum": [
+            "pbe",
+            "r2scan",
+            "hse06"
+          ]
+        },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "soc",
+              "dft_u",
+              "dispersion",
+              "spin_polarized",
+              "gamma_only",
+              "ions_only"
+            ]
+          }
+        },
+        "label": {
+          "type": "string"
+        },
+        "vasp_executable": {
+          "enum": [
+            "vasp_std",
+            "vasp_ncl",
+            "vasp_gam",
+            null
+          ]
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formula",
+        "reduced_formula",
+        "composition",
+        "natoms",
+        "volume_angstrom3",
+        "density_g_cm3",
+        "lattice",
+        "space_group_number",
+        "crystal_system"
+      ],
+      "properties": {
+        "formula": {
+          "type": "string"
+        },
+        "reduced_formula": {
+          "type": "string"
+        },
+        "composition": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "element",
+              "count"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "element": {
+                "enum": [
+                  "H",
+                  "He",
+                  "Li",
+                  "Be",
+                  "B",
+                  "C",
+                  "N",
+                  "O",
+                  "F",
+                  "Ne",
+                  "Na",
+                  "Mg",
+                  "Al",
+                  "Si",
+                  "P",
+                  "S",
+                  "Cl",
+                  "Ar",
+                  "K",
+                  "Ca",
+                  "Sc",
+                  "Ti",
+                  "V",
+                  "Cr",
+                  "Mn",
+                  "Fe",
+                  "Co",
+                  "Ni",
+                  "Cu",
+                  "Zn",
+                  "Ga",
+                  "Ge",
+                  "As",
+                  "Se",
+                  "Br",
+                  "Kr",
+                  "Rb",
+                  "Sr",
+                  "Y",
+                  "Zr",
+                  "Nb",
+                  "Mo",
+                  "Tc",
+                  "Ru",
+                  "Rh",
+                  "Pd",
+                  "Ag",
+                  "Cd",
+                  "In",
+                  "Sn",
+                  "Sb",
+                  "Te",
+                  "I",
+                  "Xe",
+                  "Cs",
+                  "Ba",
+                  "La",
+                  "Ce",
+                  "Pr",
+                  "Nd",
+                  "Pm",
+                  "Sm",
+                  "Eu",
+                  "Gd",
+                  "Tb",
+                  "Dy",
+                  "Ho",
+                  "Er",
+                  "Tm",
+                  "Yb",
+                  "Lu",
+                  "Hf",
+                  "Ta",
+                  "W",
+                  "Re",
+                  "Os",
+                  "Ir",
+                  "Pt",
+                  "Au",
+                  "Hg",
+                  "Tl",
+                  "Pb",
+                  "Bi",
+                  "Po",
+                  "At",
+                  "Rn",
+                  "Fr",
+                  "Ra",
+                  "Ac",
+                  "Th",
+                  "Pa",
+                  "U",
+                  "Np",
+                  "Pu",
+                  "Am",
+                  "Cm",
+                  "Bk",
+                  "Cf",
+                  "Es",
+                  "Fm",
+                  "Md",
+                  "No",
+                  "Lr",
+                  "Rf",
+                  "Db",
+                  "Sg",
+                  "Bh",
+                  "Hs",
+                  "Mt",
+                  "Ds",
+                  "Rg",
+                  "Cn",
+                  "Nh",
+                  "Fl",
+                  "Mc",
+                  "Lv",
+                  "Ts",
+                  "Og"
+                ]
+              },
+              "count": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "natoms": {
+          "type": "integer"
+        },
+        "volume_angstrom3": {
+          "type": "number"
+        },
+        "density_g_cm3": {
+          "type": "number"
+        },
+        "lattice": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "a",
+            "b",
+            "c",
+            "alpha",
+            "beta",
+            "gamma"
+          ],
+          "properties": {
+            "a": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "c": {
+              "type": "number"
+            },
+            "alpha": {
+              "type": "number"
+            },
+            "beta": {
+              "type": "number"
+            },
+            "gamma": {
+              "type": "number"
+            }
+          }
+        },
+        "space_group_number": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "crystal_system": {
+          "enum": [
+            "triclinic",
+            "monoclinic",
+            "orthorhombic",
+            "tetragonal",
+            "trigonal",
+            "hexagonal",
+            "cubic",
+            null
+          ]
+        }
+      }
+    },
+    "catalogue_entry": {
+      "type": "object",
+      "required": [
+        "value",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "incar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tags",
+        "withheld_tag_count",
+        "text"
+      ],
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tag",
+              "value"
+            ],
+            "properties": {
+              "tag": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]{0,31}$"
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "type": [
+                      "boolean",
+                      "integer",
+                      "number",
+                      "string"
+                    ]
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "repeat",
+                        "value"
+                      ],
+                      "properties": {
+                        "repeat": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "value": {
+                          "type": [
+                            "boolean",
+                            "integer",
+                            "number"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "withheld_tag_count": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "kpoints": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "mode",
+            "subdivisions",
+            "shift"
+          ],
+          "properties": {
+            "kind": {
+              "const": "automatic_mesh"
+            },
+            "mode": {
+              "enum": [
+                "Gamma",
+                "Monkhorst-Pack"
+              ]
+            },
+            "subdivisions": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "shift": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "count",
+            "coordinate_mode"
+          ],
+          "properties": {
+            "kind": {
+              "const": "explicit_list"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "coordinate_mode": {
+              "enum": [
+                "cartesian",
+                "reciprocal"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
