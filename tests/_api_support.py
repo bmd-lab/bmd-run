@@ -182,6 +182,7 @@ class FakeCompute:
             "submitted_at_local": "2026-10-10 00:00:00" if record["job_id"] else None,
         }
         template["scheduler"] = record.get("scheduler")
+        template["labels"] = dict(record.get("labels") or {})
         return template
 
     def _put(self, principal, attempt_id, body, fault):
@@ -243,7 +244,7 @@ class FakeCompute:
                 return self._error(404, "attempt_not_found")
             if record["principal"] != principal:
                 return self._error(403, "attempt_forbidden")
-            if record["job_id"]:
+            if record["job_id"] and not record.get("scheduler_fixed"):
                 record["scheduler"] = copy.deepcopy(fixture("attempt_get_submitted")["response"]["body"]["scheduler"])
             return 200, self._projection(record)
 

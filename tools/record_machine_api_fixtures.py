@@ -48,6 +48,7 @@ ATTEMPT_UNKNOWN = "2c3d4e5f-6a7b-4c8d-ae9f-0a1b2c3d4e5f"
 ATTEMPT_UNCERTAIN = "3d4e5f6a-7b8c-4d9e-bf0a-1b2c3d4e5f6a"
 ATTEMPT_SUBMIT_FAILED = "4e5f6a7b-8c9d-4e0f-8a1b-2c3d4e5f6a7b"
 ATTEMPT_CAPPED = "5f6a7b8c-9d0e-4f1a-9b2c-3d4e5f6a7b8c"
+ATTEMPT_LABELLED = "15152671-4724-4962-8d4c-78425ed6b968"
 
 _UTC = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 _LOCAL = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$")
@@ -92,6 +93,8 @@ def _setup(compute: Path, workdir: Path):
         "preparer": ["plan", "read", "prepare"],
         "planner": ["plan", "read"],
         "submit_only": ["submit"],
+        # Another client of the same Compute API that sets labels (bmd-run itself sends none).
+        "labelling_client": ["plan", "read", "prepare", "submit"],
     }
     entries, tokens = [], {}
     for principal, granted in scopes.items():
@@ -229,6 +232,17 @@ def _cases(client, tokens, power, RemoteCommandResult, ledger_module) -> dict:
     call("attempt_error_execution_not_configured", "PUT", f"/api/v1/attempts/{ATTEMPT_CAPPED}", tokens["runner"],
          attempt(False), "runner")
     os.environ[ledger_module.STATE_DIR_ENV] = saved
+
+    # A completed, labelled attempt created by another client (live POWER acceptance shape):
+    # labels are a documented request field, and bmd-run status must read such attempts.
+    labelled = attempt(False)
+    labelled["labels"] = {"campaign": "phase1b-acceptance", "cell": "si-pbe-static-prepare"}
+    path = f"/api/v1/attempts/{ATTEMPT_LABELLED}"
+    call("attempt_labelled_prepare", "PUT", path, tokens["labelling_client"], labelled, "labelling_client")
+    labelled["submit"] = True
+    submitted = call("attempt_labelled_submit", "PUT", path, tokens["labelling_client"], labelled, "labelling_client")
+    power.job_states[submitted.json()["submission"]["job_id"]] = "COMPLETED"
+    call("attempt_get_labelled_completed", "GET", path, tokens["labelling_client"], None, "labelling_client")
     return out
 
 

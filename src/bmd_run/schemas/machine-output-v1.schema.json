@@ -1284,6 +1284,7 @@
       "required": [
         "attempt_id",
         "created_at",
+        "label_keys",
         "plan_digest",
         "resources",
         "scheduler",
@@ -1473,6 +1474,15 @@
               "type": "null"
             }
           ]
+        },
+        "label_keys": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "campaign",
+              "cell"
+            ]
+          }
         }
       }
     },

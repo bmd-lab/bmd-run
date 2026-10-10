@@ -36,8 +36,13 @@ class MachineFixtureProvenance(unittest.TestCase):
         for path in API_FIXTURES.glob("attempt_*.json"):
             case = json.loads(path.read_text(encoding="utf-8"))
             body = case["request"]["body"]
-            if body is not None:
-                self.assertLessEqual(set(body), {"structure", "workflow", "resources", "expected_plan_digest", "submit"}, path.name)
+            if body is None:
+                continue
+            allowed = {"structure", "workflow", "resources", "expected_plan_digest", "submit"}
+            if case["request"]["principal"] == "labelling_client":
+                # Recorded from another client that sets labels; bmd-run itself never sends them.
+                allowed = allowed | {"labels"}
+            self.assertLessEqual(set(body), allowed, path.name)
 
 
 if __name__ == "__main__":

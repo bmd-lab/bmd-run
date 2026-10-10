@@ -156,6 +156,10 @@ credentials, SSH settings, remote paths or submission identity tokens.
   attempt ID, or run `api status`. A new UUID is never generated automatically.
 - An uncertain submission (exit 15) is never answered by another attempt.
   BMD Compute never submits one attempt twice.
+- `api status UUID` also reads attempts created by other clients under the same
+  Compute principal, without a local record (nothing is written for them).
+  Compute's optional `campaign`/`cell` labels are validated against Compute's
+  label rule; only the label names are shown, never their values.
 
 ## `--json` output (for synthetic-user testing)
 

@@ -65,6 +65,9 @@ POLICY_NAMES = (
     "plan_digest",
 )
 
+# compute_api/schemas.py LABEL_KEYS (labels set by the client that created an attempt)
+LABEL_KEYS = ("campaign", "cell")
+
 # compute_api/execution.py
 ATTEMPT_STATES = ("registered", "prepared", "submitted", "submission_uncertain")
 SCHEDULER_SUMMARIES = ("PENDING", "RUNNING", "SUCCESS", "FAILURE", "UNKNOWN")

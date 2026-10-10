@@ -153,6 +153,8 @@ def render_attempt(attempt: dict) -> List[str]:
         f"  Created:              {attempt['created_at']}",
         f"  Job ID:               {submission['job_id'] or '(none)'}",
     ]
+    if attempt["label_keys"]:
+        lines.append(f"  Labels:               {', '.join(attempt['label_keys'])} (values not shown)")
     if scheduler is not None:
         lines.append(
             f"  Scheduler:            {scheduler['summary']} ({scheduler['state']})"

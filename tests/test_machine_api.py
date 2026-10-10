@@ -600,6 +600,76 @@ class SubmitBoundaryWithFakeTransport(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in (Path(tmp) / "state" / "attempts").iterdir()), [f"{attempt}.json"])
 
 
+LABELLED = fixture("attempt_get_labelled_completed")
+LABELLED_ID = LABELLED["request"]["path"].rsplit("/", 1)[1]
+
+
+class LabelsAndForeignAttempts(Base):
+    """Attempts created by another client of the same Compute principal (live acceptance case)."""
+
+    def register_foreign_attempt(self, labels):
+        body = LABELLED["response"]["body"]
+        self.compute.ledger[LABELLED_ID] = {
+            "attempt_id": LABELLED_ID, "principal": "runner", "request_sha": "0" * 64,
+            "plan_digest": body["plan_digest"], "state": "submitted", "requested": True,
+            "job_id": body["submission"]["job_id"], "scheduler": body["scheduler"], "scheduler_fixed": True,
+            "labels": labels,
+        }
+
+    def serve_labels(self, labels):
+        def override(status, document):
+            return status, "application/json", json.dumps({**document, "labels": labels}).encode()
+        self.compute.raw_override.append(override)
+
+    def test_status_reads_a_labelled_attempt_without_a_local_record(self):
+        self.register_foreign_attempt(LABELLED["response"]["body"]["labels"])
+        code, out, err = self.api("--json", "status", LABELLED_ID)
+        self.assertEqual(code, 0, err)
+        attempt = json.loads(out)["result"]["attempt"]
+        self.assertEqual(attempt["label_keys"], ["campaign", "cell"])
+        self.assertEqual((attempt["state"], attempt["submission"]["job_id"]), ("submitted", "920004"))
+        self.assertEqual((attempt["scheduler"]["summary"], attempt["scheduler"]["state"], attempt["scheduler"]["exit_code"]),
+                         ("SUCCESS", "COMPLETED", "0:0"))
+        self.assertIsNone(json.loads(out)["result"]["local"])
+        self.assertEqual(self.ws.records(), {}, "status never creates a record")
+        code, text, _ = self.api("status", LABELLED_ID)
+        self.assertIn("Labels:               campaign, cell (values not shown)", text)
+        for output in (out, text):
+            self.assertNotIn("phase1b-acceptance", output)
+            self.assertNotIn("si-pbe-static-prepare", output)
+        self.assertEqual(self.calls(), [("GET", f"/api/v1/attempts/{LABELLED_ID}")] * 2)
+
+    def test_empty_and_partial_labels_are_accepted(self):
+        attempt = self.prepare()
+        for labels in ({}, {"cell": "si-pbe"}, {"campaign": "c1"}):
+            self.serve_labels(labels)
+            code, out, _ = self.api("--json", "status", attempt)
+            self.assertEqual(code, 0, labels)
+            self.assertEqual(json.loads(out)["result"]["attempt"]["label_keys"], [k for k in ("campaign", "cell") if k in labels])
+
+    def test_malformed_or_unsupported_labels_are_refused_without_relaying_them(self):
+        attempt = self.prepare()
+        for labels in (
+            ["campaign"],
+            "campaign=x",
+            {"campaign": 7},
+            {"campaign": ""},
+            {"campaign": "has space"},
+            {"campaign": "-leading"},
+            {"campaign": "x" * 65},
+            {"campaign": "ok", "owner": "someone"},
+            {"path": "/bmd/runs"},
+        ):
+            self.serve_labels(labels)
+            code, out, err = self.api("--json", "status", attempt)
+            self.assertEqual(code, errors.EXIT_UNEXPECTED_RESPONSE, labels)
+            error = json.loads(out)["error"]
+            self.assertIn("machine API v1 contract", error["message"])
+            self.assertNotIn("v1.0.0", error["message"] + (error["suggestion"] or ""))
+            for needle in ("someone", "owner", "/bmd/runs", "has space"):
+                self.assertNotIn(needle, out + err)
+
+
 class ChangedRequests(Base):
     def test_resume_takes_no_scientific_arguments(self):
         attempt = self.prepare()

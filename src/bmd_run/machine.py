@@ -73,6 +73,7 @@ REQUEST_FIELD_NAMES = (
     "theory", "modifiers", "options", "resources", "cpus", "memory_gb", "walltime", "queue",
     "expected_plan_digest", "submit", "labels", "campaign", "cell",
 )
+_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$")
 _POTCAR = re.compile(r"^([A-Z][a-z]?)(?:_([A-Za-z0-9_]{1,8}))?$")
 
 COMMAND_SCOPES = {"plan": "plan", "prepare": "prepare", "submit": "submit", "status": "read"}
@@ -190,11 +191,45 @@ def request_summary(request: Mapping[str, Any]) -> dict:
 
 # ================================================================== projection
 
-_FAIL = bounded.fail
+def _FAIL(field: str) -> bounded.ComputeFormatError:
+    """A machine-API response field that does not match the contract the client parses."""
+
+    return bounded.ComputeFormatError(
+        f"BMD Compute machine-API response field '{field}' does not match the machine API v1 contract "
+        "the client parses. Nothing from this response was reported.",
+        suggestion="The service is not answering like the BMD Compute machine API v1 (bmd-compute e3fbb3b).",
+    )
 
 
 def _choice(value, options, field):
-    return bounded.choice(value, options, field)
+    for option in options:
+        if value == option:
+            return option
+    raise _FAIL(field)
+
+
+def _formula_terms(value, field):
+    try:
+        return bounded.formula(value, field)
+    except bounded.ComputeFormatError:
+        raise _FAIL(field) from None
+
+
+def _label_keys(value, field) -> List[str]:
+    """Validate attempt labels (Compute's ``campaign``/``cell`` identifiers); report key names only.
+
+    Labels are set by whichever client created the attempt. Their values are free-form
+    identifiers chosen outside bmd-run, so they are checked against Compute's label rule but
+    never reported; only the client's own copies of the recognised key names are.
+    """
+
+    labels = _object(value, field)
+    for key, item in labels.items():
+        if bounded.optional_choice(key, vocab.LABEL_KEYS) is None:
+            raise _FAIL(field)
+        if not isinstance(item, str) or not _LABEL.match(item):
+            raise _FAIL(f"{field}.{key}")
+    return [key for key in vocab.LABEL_KEYS if key in labels]
 
 
 def _member_or_none(value, options):
@@ -538,9 +573,9 @@ def project_plan(document: Any, sent: Mapping[str, Any]) -> dict:
     ):
         raise UnexpectedResponse("BMD Compute answered a plan for a different request than the one sent.")
     structure = _object(plan.get("structure"), "plan.structure")
-    formula = bounded.render_formula(bounded.formula(structure.get("formula"), "plan.structure.formula"), reduced=False)
+    formula = bounded.render_formula(_formula_terms(structure.get("formula"), "plan.structure.formula"), reduced=False)
     reduced = bounded.render_formula(
-        bounded.formula(structure.get("reduced_formula"), "plan.structure.reduced_formula"), reduced=True
+        _formula_terms(structure.get("reduced_formula"), "plan.structure.reduced_formula"), reduced=True
     )
     workflow = _object(plan.get("workflow"), "plan.workflow")
     stage_values = _list(workflow.get("stages"), "plan.workflow.stages", 64)
@@ -632,9 +667,7 @@ def project_attempt(document: Any, *, attempt_id: str, expected_plan_digest: Opt
     digest = _digest(attempt.get("plan_digest"), "attempt.plan_digest")
     if expected_plan_digest is not None and digest != expected_plan_digest:
         raise UnexpectedResponse("BMD Compute reports a different plan digest for this attempt than the one it is bound to.")
-    labels = _object(attempt.get("labels"), "attempt.labels")
-    if labels:
-        raise _FAIL("attempt.labels")  # bmd-run never sends labels
+    label_keys = _label_keys(attempt.get("labels"), "attempt.labels")
     submission = _object(attempt.get("submission"), "attempt.submission")
     requested = submission.get("requested")
     if not isinstance(requested, bool):
@@ -648,6 +681,7 @@ def project_attempt(document: Any, *, attempt_id: str, expected_plan_digest: Opt
         "plan_digest": digest,
         "state": state,
         "created_at": _utc(attempt.get("created_at"), "attempt.created_at"),
+        "label_keys": label_keys,
         "resources": project_resources(attempt.get("resources"), "attempt.resources"),
         "submission": {
             "requested": requested,

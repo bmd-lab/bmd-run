@@ -16,7 +16,12 @@ PR #44, the machine execution API) with `tools/record_machine_api_fixtures.py`.
 * Structures: `Si.POSCAR` and `NiO.POSCAR` are the v1 fixtures; `Si.cif` is
   pymatgen's `CifWriter` output for `Si.POSCAR`.
 * Attempt bodies are exactly what bmd-run sends: the plan request plus
-  `expected_plan_digest` and `submit`, with no labels.
+  `expected_plan_digest` and `submit`, with no labels. The exception is the
+  `attempt_labelled_*` / `attempt_get_labelled_completed` cases, recorded as
+  another client of the same API (principal `labelling_client`) that sets
+  Compute's documented `campaign`/`cell` labels, then marked COMPLETED in the
+  fake POWER. They match the shape of the labelled attempt that bmd-run must be
+  able to read with `api status` (found during live POWER acceptance).
 
 Each `<case>.json` holds the request (method, path, principal, body) and
 Compute's response (status, content type, JSON body).
