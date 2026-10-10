@@ -87,7 +87,8 @@ class InstalledWheelSmoke(unittest.TestCase):
             self.assertEqual(
                 sorted(name for name in names if name.startswith("bmd_run/")),
                 sorted(
-                    ["bmd_run/schemas/output-v3.schema.json", "bmd_run/schemas/machine-output-v1.schema.json"]
+                    ["bmd_run/schemas/output-v3.schema.json", "bmd_run/schemas/machine-output-v1.schema.json",
+                     "bmd_run/schemas/run-output-v1.schema.json"]
                     + [f"bmd_run/{p.name}" for p in (ROOT / "src" / "bmd_run").glob("*.py")]
                 ),
             )

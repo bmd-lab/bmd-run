@@ -1,0 +1,1852 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bmd_run.run_output/1",
+  "title": "BMD Run one-command output document, schema version 1",
+  "description": "Emitted on stdout by 'bmd-run STRUCTURE --json', on success and on error. 'stage' is where the run ended (plan, prepare, submit, or complete); once an attempt has been recorded, 'attempt_id' and the R1 'recovery' commands are always present. 'result' carries what completed. The plan, attempt, local and error objects are exactly those of bmd_run.machine_output v1, with the same rules: no Compute prose, the client's own copies of a closed vocabulary pinned to bmd-compute e3fbb3b, re-rendered digests, job IDs and timestamps, bounded numbers, and never the API token.",
+  "type": "object",
+  "required": [
+    "attempt_id",
+    "client",
+    "command",
+    "compute_api",
+    "error",
+    "ok",
+    "recovery",
+    "request",
+    "result",
+    "schema",
+    "schema_version",
+    "stage",
+    "warnings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "bmd_run.run_output"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "client": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "const": "bmd-run"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "command": {
+      "const": "run"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "compute_api": {
+      "type": "object",
+      "required": [
+        "api_version",
+        "origin",
+        "reference_commit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "origin": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "api_version": {
+          "const": "v1"
+        },
+        "reference_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "request": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "custom_stage_count",
+            "desired_output",
+            "resources",
+            "structure_format",
+            "structure_source",
+            "workflow_mode"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "structure_format": {
+              "enum": [
+                "poscar",
+                "cif"
+              ]
+            },
+            "workflow_mode": {
+              "enum": [
+                "desired_output",
+                "custom"
+              ]
+            },
+            "desired_output": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "custom_stage_count": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "resources": {
+              "type": "object",
+              "required": [],
+              "additionalProperties": false,
+              "properties": {
+                "cpus": {
+                  "type": "integer"
+                },
+                "memory_gb": {
+                  "type": "integer"
+                },
+                "walltime": {
+                  "type": "string",
+                  "pattern": "^[0-9]{2,3}:[0-5][0-9]:[0-5][0-9]$"
+                },
+                "queue": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+                }
+              }
+            },
+            "structure_source": {
+              "$ref": "#/$defs/structure_source"
+            }
+          }
+        }
+      ]
+    },
+    "stage": {
+      "enum": [
+        "plan",
+        "prepare",
+        "submit",
+        "complete"
+      ]
+    },
+    "attempt_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recovery": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^bmd-run api (status|submit|prepare --attempt) [0-9a-f-]{36}$"
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local",
+        "plan",
+        "prepared",
+        "record_path",
+        "submitted"
+      ],
+      "properties": {
+        "plan": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/plan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prepared": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attempt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "submitted": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attempt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "local": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/local"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "record_path": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "error": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/error"
+        }
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "request_summary": {
+      "type": "object",
+      "required": [
+        "custom_stage_count",
+        "desired_output",
+        "resources",
+        "structure_format",
+        "workflow_mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "structure_format": {
+          "enum": [
+            "poscar",
+            "cif"
+          ]
+        },
+        "workflow_mode": {
+          "enum": [
+            "desired_output",
+            "custom"
+          ]
+        },
+        "desired_output": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "custom_stage_count": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resources": {
+          "type": "object",
+          "required": [],
+          "additionalProperties": false,
+          "properties": {
+            "cpus": {
+              "type": "integer"
+            },
+            "memory_gb": {
+              "type": "integer"
+            },
+            "walltime": {
+              "type": "string",
+              "pattern": "^[0-9]{2,3}:[0-5][0-9]:[0-5][0-9]$"
+            },
+            "queue": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+            }
+          }
+        }
+      }
+    },
+    "structure_source": {
+      "type": "object",
+      "required": [
+        "file_name",
+        "format",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "file_name": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "format": {
+          "enum": [
+            "poscar",
+            "cif"
+          ]
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": [
+        "account",
+        "cpus",
+        "memory_gb",
+        "nodes",
+        "partition",
+        "walltime"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": {
+          "type": "integer"
+        },
+        "cpus": {
+          "type": "integer"
+        },
+        "memory_gb": {
+          "type": "integer"
+        },
+        "walltime": {
+          "type": "string",
+          "pattern": "^[0-9]{2,3}:[0-5][0-9]:[0-5][0-9]$"
+        },
+        "partition": {
+          "oneOf": [
+            {
+              "enum": [
+                "leeburton-pool"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "account": {
+          "oneOf": [
+            {
+              "enum": [
+                "power-leeburton-users_v2"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "required": [
+        "dft_u",
+        "index",
+        "modifiers",
+        "option_count",
+        "stage_type",
+        "theory",
+        "unrecognized_modifier_count",
+        "vasp_executable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "stage_type": {
+          "oneOf": [
+            {
+              "enum": [
+                "relax",
+                "static",
+                "dos",
+                "band_structure",
+                "phonon_forces"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "theory": {
+          "oneOf": [
+            {
+              "enum": [
+                "pbe",
+                "r2scan",
+                "hse06"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "soc",
+              "dft_u",
+              "dispersion",
+              "spin_polarized",
+              "gamma_only",
+              "ions_only"
+            ]
+          }
+        },
+        "unrecognized_modifier_count": {
+          "type": "integer"
+        },
+        "vasp_executable": {
+          "oneOf": [
+            {
+              "enum": [
+                "vasp_std",
+                "vasp_ncl",
+                "vasp_gam"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "option_count": {
+          "type": "integer"
+        },
+        "dft_u": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "ldautype",
+                "species"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "ldautype": {
+                  "oneOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "species": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": [
+                      "J",
+                      "L",
+                      "U"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "U": {
+                        "type": "number"
+                      },
+                      "J": {
+                        "type": "number"
+                      },
+                      "L": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "consideration": {
+      "type": "object",
+      "required": [
+        "automatic_application_state",
+        "automatic_stage_indices",
+        "id",
+        "method",
+        "modifier",
+        "selection_state",
+        "status",
+        "trigger_elements"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "spin.composition_screen",
+            "dftu.mp_oxide_fluoride",
+            "soc.heavy_elements",
+            "dispersion.two_dimensional_connectivity"
+          ]
+        },
+        "method": {
+          "oneOf": [
+            {
+              "enum": [
+                "dft_u",
+                "soc",
+                "spin_polarisation",
+                "dispersion"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modifier": {
+          "oneOf": [
+            {
+              "enum": [
+                "soc",
+                "dft_u",
+                "dispersion",
+                "spin_polarized",
+                "gamma_only",
+                "ions_only"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "oneOf": [
+            {
+              "enum": [
+                "recommended_for_consideration",
+                "suppressed_by_d0_gate"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selection_state": {
+          "oneOf": [
+            {
+              "enum": [
+                "not_selected",
+                "already_selected"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "automatic_application_state": {
+          "oneOf": [
+            {
+              "enum": [
+                "applied",
+                "omitted_unsupported_combination",
+                "not_applicable",
+                "advisory"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trigger_elements": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "H",
+              "He",
+              "Li",
+              "Be",
+              "B",
+              "C",
+              "N",
+              "O",
+              "F",
+              "Ne",
+              "Na",
+              "Mg",
+              "Al",
+              "Si",
+              "P",
+              "S",
+              "Cl",
+              "Ar",
+              "K",
+              "Ca",
+              "Sc",
+              "Ti",
+              "V",
+              "Cr",
+              "Mn",
+              "Fe",
+              "Co",
+              "Ni",
+              "Cu",
+              "Zn",
+              "Ga",
+              "Ge",
+              "As",
+              "Se",
+              "Br",
+              "Kr",
+              "Rb",
+              "Sr",
+              "Y",
+              "Zr",
+              "Nb",
+              "Mo",
+              "Tc",
+              "Ru",
+              "Rh",
+              "Pd",
+              "Ag",
+              "Cd",
+              "In",
+              "Sn",
+              "Sb",
+              "Te",
+              "I",
+              "Xe",
+              "Cs",
+              "Ba",
+              "La",
+              "Ce",
+              "Pr",
+              "Nd",
+              "Pm",
+              "Sm",
+              "Eu",
+              "Gd",
+              "Tb",
+              "Dy",
+              "Ho",
+              "Er",
+              "Tm",
+              "Yb",
+              "Lu",
+              "Hf",
+              "Ta",
+              "W",
+              "Re",
+              "Os",
+              "Ir",
+              "Pt",
+              "Au",
+              "Hg",
+              "Tl",
+              "Pb",
+              "Bi",
+              "Po",
+              "At",
+              "Rn",
+              "Fr",
+              "Ra",
+              "Ac",
+              "Th",
+              "Pa",
+              "U",
+              "Np",
+              "Pu",
+              "Am",
+              "Cm",
+              "Bk",
+              "Cf",
+              "Es",
+              "Fm",
+              "Md",
+              "No",
+              "Lr",
+              "Rf",
+              "Db",
+              "Sg",
+              "Bh",
+              "Hs",
+              "Mt",
+              "Ds",
+              "Rg",
+              "Cn",
+              "Nh",
+              "Fl",
+              "Mc",
+              "Lv",
+              "Ts",
+              "Og"
+            ]
+          }
+        },
+        "automatic_stage_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "incar_tag": {
+      "type": "object",
+      "required": [
+        "tag",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "type": "string"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "input_stage": {
+      "type": "object",
+      "required": [
+        "incar",
+        "index",
+        "kpoints",
+        "poscar",
+        "potcar_symbols",
+        "unrecognized_potcar_symbol_count"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "incar": {
+          "type": "object",
+          "required": [
+            "sha256",
+            "tags",
+            "withheld_tag_count"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "tags": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/incar_tag"
+              }
+            },
+            "withheld_tag_count": {
+              "type": "integer"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "kpoints": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "mesh",
+                "num_kpts",
+                "sha256",
+                "shift",
+                "style"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "style": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "Gamma",
+                        "Monkhorst",
+                        "Automatic",
+                        "Line_mode",
+                        "Cartesian",
+                        "Reciprocal"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "num_kpts": {
+                  "type": "integer"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "mesh": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "shift": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "potcar_symbols": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][a-z]?(_[A-Za-z0-9_]{1,8})?$"
+          }
+        },
+        "unrecognized_potcar_symbol_count": {
+          "type": "integer"
+        },
+        "poscar": {
+          "type": "object",
+          "required": [
+            "num_sites",
+            "sha256"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "num_sites": {
+              "type": "integer"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "capability_schema_version",
+        "method_considerations",
+        "plan_digest",
+        "plan_digest_version",
+        "policies",
+        "request",
+        "resources",
+        "scientific_inputs",
+        "software",
+        "structure",
+        "unavailable_from_compute_api",
+        "workflow"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest_version": {
+          "enum": [
+            1
+          ]
+        },
+        "request": {
+          "$ref": "#/$defs/request_summary"
+        },
+        "structure": {
+          "type": "object",
+          "required": [
+            "canonical_sha256",
+            "crystal_system",
+            "formula",
+            "natoms",
+            "reduced_formula",
+            "space_group_number",
+            "volume_angstrom3"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "formula": {
+              "type": "string"
+            },
+            "reduced_formula": {
+              "type": "string"
+            },
+            "natoms": {
+              "type": "integer"
+            },
+            "space_group_number": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "crystal_system": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "triclinic",
+                    "monoclinic",
+                    "orthorhombic",
+                    "tetragonal",
+                    "trigonal",
+                    "hexagonal",
+                    "cubic"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "volume_angstrom3": {
+              "type": "number"
+            },
+            "canonical_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "workflow": {
+          "type": "object",
+          "required": [
+            "desired_output",
+            "stage_count",
+            "stages"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "desired_output": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "energy_only",
+                    "relaxed_structure",
+                    "electronic_dos",
+                    "electronic_band_structure"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stage_count": {
+              "type": "integer"
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/stage"
+              }
+            }
+          }
+        },
+        "method_considerations": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "considerations",
+                "policy_version",
+                "unrecognized_count"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "policy_version": {
+                  "oneOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "considerations": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/consideration"
+                  }
+                },
+                "unrecognized_count": {
+                  "type": "integer"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resources": {
+          "$ref": "#/$defs/resources"
+        },
+        "scientific_inputs": {
+          "type": "object",
+          "required": [
+            "potcar_functional",
+            "stages"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "potcar_functional": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "PBE",
+                    "PBE_52",
+                    "PBE_54",
+                    "PBE_64",
+                    "LDA",
+                    "LDA_52",
+                    "LDA_54",
+                    "LDA_64",
+                    "PW91"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/input_stage"
+              }
+            }
+          }
+        },
+        "software": {
+          "type": "object",
+          "required": [
+            "module_count",
+            "runtime_parity_packages"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "module_count": {
+              "type": "integer"
+            },
+            "runtime_parity_packages": {
+              "type": "object",
+              "required": [
+                "atomate2",
+                "custodian",
+                "emmet-core",
+                "jobflow",
+                "pymatgen",
+                "pymatgen-core",
+                "spglib"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "atomate2": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "pymatgen": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "pymatgen-core": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "custodian": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "emmet-core": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "jobflow": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "spglib": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+){0,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "policies": {
+          "type": "object",
+          "required": [
+            "automatic_dft_u",
+            "custodian",
+            "method_considerations",
+            "new_calculation_admission",
+            "plan_digest",
+            "runtime_parity"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "new_calculation_admission": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "automatic_dft_u": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "method_considerations": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "custodian": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "runtime_parity": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "plan_digest": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "capability_schema_version": {
+          "type": "integer"
+        },
+        "unavailable_from_compute_api": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "required": [
+        "attempt_id",
+        "created_at",
+        "label_keys",
+        "plan_digest",
+        "resources",
+        "scheduler",
+        "state",
+        "submission"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "attempt_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "state": {
+          "enum": [
+            "registered",
+            "prepared",
+            "submitted",
+            "submission_uncertain"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        },
+        "resources": {
+          "$ref": "#/$defs/resources"
+        },
+        "submission": {
+          "type": "object",
+          "required": [
+            "job_id",
+            "requested",
+            "submitted_at_local"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "requested": {
+              "type": "boolean"
+            },
+            "job_id": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]{1,20}(_[0-9]{1,10})?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "submitted_at_local": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "scheduler": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "available",
+                "checked_at",
+                "elapsed",
+                "ended_at",
+                "exit_code",
+                "started_at",
+                "state",
+                "summary",
+                "terminal"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "available": {
+                  "type": "boolean"
+                },
+                "summary": {
+                  "enum": [
+                    "PENDING",
+                    "RUNNING",
+                    "SUCCESS",
+                    "FAILURE",
+                    "UNKNOWN"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "PENDING",
+                    "CONFIGURING",
+                    "RUNNING",
+                    "COMPLETING",
+                    "COMPLETED",
+                    "FAILED",
+                    "TIMEOUT",
+                    "CANCELLED",
+                    "OUT_OF_MEMORY",
+                    "NODE_FAIL",
+                    "PREEMPTED",
+                    "BOOT_FAIL",
+                    "DEADLINE",
+                    "SUSPENDED",
+                    "REQUEUED",
+                    "REQUEUE_HOLD",
+                    "REQUEUE_FED",
+                    "RESIZING",
+                    "SIGNALING",
+                    "STAGE_OUT",
+                    "SPECIAL_EXIT",
+                    "STOPPED",
+                    "REVOKED",
+                    "RESV_DEL_HOLD",
+                    "UNKNOWN"
+                  ]
+                },
+                "exit_code": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]{1,3}:[0-9]{1,3}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "elapsed": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^([0-9]{1,4}-)?[0-9]{2}:[0-9]{2}:[0-9]{2}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "started_at": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "ended_at": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "terminal": {
+                  "type": "boolean"
+                },
+                "checked_at": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label_keys": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "campaign",
+              "cell"
+            ]
+          }
+        }
+      }
+    },
+    "local": {
+      "type": "object",
+      "required": [
+        "expected_plan_digest",
+        "local_state",
+        "request",
+        "request_sha256",
+        "structure_source",
+        "submit_requested"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "local_state": {
+          "enum": [
+            "planned",
+            "prepare_unconfirmed",
+            "registered",
+            "prepared",
+            "submit_unconfirmed",
+            "submitted",
+            "submission_uncertain"
+          ]
+        },
+        "submit_requested": {
+          "type": "boolean"
+        },
+        "expected_plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "request_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "request": {
+          "$ref": "#/$defs/request_summary"
+        },
+        "structure_source": {
+          "$ref": "#/$defs/structure_source"
+        }
+      }
+    },
+    "attempt_result": {
+      "type": "object",
+      "required": [
+        "attempt",
+        "local"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "attempt": {
+          "$ref": "#/$defs/attempt"
+        },
+        "local": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/local"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "prepare_result": {
+      "type": "object",
+      "required": [
+        "attempt",
+        "local",
+        "plan",
+        "record_path"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "$ref": "#/$defs/plan"
+        },
+        "attempt": {
+          "$ref": "#/$defs/attempt"
+        },
+        "local": {
+          "$ref": "#/$defs/local"
+        },
+        "record_path": {
+          "type": "string"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "attempt",
+        "attempt_id",
+        "compute_code",
+        "compute_stage",
+        "diagnostic_code",
+        "fields",
+        "http_status",
+        "kind",
+        "message",
+        "resolved_plan_digest",
+        "suggestion"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "usage_error",
+            "compute_unreachable",
+            "compute_rejected",
+            "unexpected_response",
+            "authentication_failed",
+            "insufficient_scope",
+            "invalid_request",
+            "plan_digest_mismatch",
+            "attempt_conflict",
+            "submission_uncertain",
+            "quota_exceeded",
+            "service_unavailable",
+            "network_timeout",
+            "attempt_not_found",
+            "remote_operation_failed",
+            "credentials_unavailable",
+            "local_state_error"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "suggestion": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "http_status": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "compute_stage": {
+          "type": "null"
+        },
+        "compute_code": {
+          "oneOf": [
+            {
+              "enum": [
+                "query_not_allowed",
+                "invalid_json",
+                "unauthenticated",
+                "loopback_required",
+                "insufficient_scope",
+                "attempt_forbidden",
+                "attempt_not_found",
+                "plan_digest_mismatch",
+                "attempt_request_mismatch",
+                "plan_changed",
+                "attempt_fingerprint_mismatch",
+                "runtime_package_changed",
+                "attempt_in_progress",
+                "attempt_busy",
+                "submission_not_started",
+                "submission_uncertain",
+                "remote_state_invalid",
+                "request_too_large",
+                "unsupported_media_type",
+                "invalid_request",
+                "structure_invalid",
+                "calculation_invalid",
+                "invalid_attempt_id",
+                "resource_limit_exceeded",
+                "active_job_cap_exceeded",
+                "submission_cap_exceeded",
+                "attempt_cap_exceeded",
+                "plan_failed",
+                "attempt_failed",
+                "lookup_failed",
+                "server_misconfigured",
+                "prepare_failed",
+                "submit_failed",
+                "api_not_configured",
+                "execution_not_configured",
+                "remote_busy",
+                "remote_unavailable",
+                "remote_state_unconfirmed",
+                "submission_outcome_unconfirmed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempt_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fields": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "field",
+                  "problem"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "problem": {
+                    "oneOf": [
+                      {
+                        "enum": [
+                          "unknown_field",
+                          "required",
+                          "must_be_object",
+                          "must_be_poscar_or_cif",
+                          "must_be_nonempty_string",
+                          "too_large",
+                          "invalid_characters",
+                          "exactly_one_of_desired_output_or_custom",
+                          "must_be_identifier",
+                          "must_be_positive_integer",
+                          "must_be_hh_mm_ss",
+                          "must_be_nonempty_list",
+                          "too_many_stages",
+                          "must_be_identifier_list",
+                          "must_be_sha256_digest",
+                          "must_be_boolean",
+                          "must_be_label"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "diagnostic_code": {
+          "oneOf": [
+            {
+              "enum": [
+                "unknown_desired_output",
+                "hse06_soc_not_supported_for_new_calculations",
+                "automatic_dispersion_dimensionality_analysis_failed",
+                "unsupported_combination"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_plan_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/attempt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,8 @@
 """Command-line interface.
 
+* ``bmd-run STRUCTURE [OPTIONS]``: the recommended one-command interface. It runs one
+  calculation through BMD Compute's machine API by calling the R1 operations in order
+  (``machine.run``: plan, record the attempt, prepare, submit). See ``_main_run``.
 * ``bmd-run {identity,options,analyze,plan}``: read/build-only commands against
   the frozen BMD Compute v1.0.0 browser interface (unchanged from v0.1.0).
 * ``bmd-run api {plan,prepare,submit,status}``: the separate, authenticated
@@ -39,6 +42,18 @@ COMPUTE_URL_ENV = "BMD_COMPUTE_URL"
 MAX_STRUCTURE_BYTES = 2 * 1024 * 1024
 MAX_CUSTOM_WORKFLOW_BYTES = 64 * 1024
 API_COMMANDS = ("plan", "prepare", "submit", "status")
+# The first positional argument selects a command if it is one of these names; any other
+# first positional argument is a structure file for ``bmd-run STRUCTURE``. Words that are,
+# or might be mistaken for, commands are reserved too, so that for example ``bmd-run submit
+# X`` stays a usage error and never starts a calculation. (A structure file with one of these
+# names can be given as ./NAME.)
+COMMAND_NAMES = ("identity", "options", "analyze", "plan", "api")
+RESERVED_WORDS = ("prepare", "submit", "status", "monitor", "resume", "cancel", "run", "batch", "help")
+DEFAULT_DESIRED_OUTPUT = "energy_only"  # Compute's Energy-only Desired Output, as in the UI
+_OPTIONS_WITH_VALUES = frozenset({
+    "--compute-url", "--timeout", "--format", "--desired-output", "--custom-workflow", "--cpus",
+    "--memory-gb", "--walltime", "--queue", "--api-url", "--token-file", "--state-dir",
+})
 
 # Convenience spellings only. The values are BMD Compute's own Desired Output
 # identifiers and are passed through unchanged; any other identifier is sent
@@ -85,10 +100,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = _ArgumentParser(
         prog="bmd-run",
         description=(
-            "Restricted client for BMD Compute. The identity, options, analyze and plan commands are "
-            "read/build-only against BMD Compute v1.0.0 and cannot prepare or submit. The separate "
-            "'api' commands use BMD Compute's authenticated machine API, through your SSH tunnel, "
-            "to plan, prepare, submit and check one calculation; BMD Compute performs all execution."
+            "Restricted client for BMD Compute. To run one calculation: "
+            "'bmd-run STRUCTURE [--desired-output ID | --custom-workflow FILE] [resources]' "
+            "(see 'bmd-run STRUCTURE --help'); BMD Compute plans, prepares and submits it. "
+            "The 'api' commands are the same machine-API operations one at a time, for advanced "
+            "use and recovery. The identity, options, analyze and plan commands are read/build-only "
+            "against BMD Compute v1.0.0 and cannot prepare or submit."
         ),
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -248,6 +265,9 @@ def main(
     stdout = stdout or sys.stdout
     stderr = stderr or sys.stderr
     environ = os.environ if environ is None else environ
+    first = _first_positional(argv)
+    if first is not None and argv[first] not in COMMAND_NAMES + RESERVED_WORDS:
+        return _main_run(argv, api_transport_factory, environ, stdout, stderr)
     if "api" in argv[: _first_command_index(argv) + 1]:
         return _main_api(argv, api_transport_factory, environ, stdout, stderr)
     want_json = "--json" in argv
@@ -333,6 +353,130 @@ def _first_command_index(argv: List[str]) -> int:
             continue
         return index
     return len(argv)
+
+
+def _first_positional(argv: List[str]) -> Optional[int]:
+    """Index of the first positional argument, skipping every option and its value."""
+
+    index = 0
+    while index < len(argv):
+        item = argv[index]
+        if item == "--":
+            return index + 1 if index + 1 < len(argv) else None
+        if item in _OPTIONS_WITH_VALUES:
+            index += 2
+            continue
+        if item.startswith("-"):
+            index += 1
+            continue
+        return index
+    return None
+
+
+def build_run_parser() -> argparse.ArgumentParser:
+    parser = _ArgumentParser(
+        prog="bmd-run",
+        usage="bmd-run STRUCTURE [--desired-output ID | --custom-workflow FILE] [options]",
+        description=(
+            "Run one calculation on POWER through BMD Compute: request the plan, record the attempt "
+            "locally, prepare it and submit it, without prompting. BMD Compute decides the methodology, "
+            "inputs and resources; bmd-run only sends your structure, workflow choice and overrides. "
+            "Without --desired-output or --custom-workflow, BMD Compute's Energy-only Desired Output is "
+            "used. Recover or inspect an attempt with 'bmd-run api prepare --attempt UUID', "
+            "'bmd-run api submit UUID' and 'bmd-run api status UUID'."
+        ),
+    )
+    parser.add_argument("structure_file", metavar="STRUCTURE", help="POSCAR or CIF file (read only).")
+    parser.add_argument("--format", choices=_FORMATS, default=None, help="Default: from the file name (.cif is CIF).")
+    workflow = parser.add_mutually_exclusive_group()
+    workflow.add_argument(
+        "--desired-output", default=None,
+        help="BMD Compute Desired Output id, or alias: " + ", ".join(
+            f"{alias}={value}" for alias, value in DESIRED_OUTPUT_ALIASES.items()
+        ) + f" (default: {DEFAULT_DESIRED_OUTPUT}).",
+    )
+    workflow.add_argument("--custom-workflow", default=None, help="JSON file in BMD Compute's Custom stage schema.")
+    parser.add_argument("--cpus", default=None)
+    parser.add_argument("--memory-gb", dest="memory_gb", default=None)
+    parser.add_argument("--walltime", default=None, help="HH:MM:SS")
+    parser.add_argument("--queue", default=None)
+    _add_api_options(parser)
+    parser.add_argument("--timeout", type=float, default=None,
+                        help=f"Seconds per request (default {API_DEFAULT_TIMEOUT_S:g}).")
+    parser.add_argument("--json", action="store_true", default=False,
+                        help="Emit one versioned JSON document (bmd_run.run_output v1).")
+    return parser
+
+
+def _main_run(argv, api_transport_factory, environ, stdout, stderr) -> int:
+    """``bmd-run STRUCTURE``: the R1 operations in order, via ``machine.run``."""
+
+    want_json = "--json" in argv
+    api_url = None
+    request = None
+    fragments: tuple = ()
+    progress: dict = {"stage": "plan", "attempt_id": None}
+    structure_name = None
+
+    def emit(text: str) -> None:
+        stdout.write(_redact(text, fragments) + "\n")
+        stdout.flush()
+
+    def on_event(event, value):
+        if want_json:
+            if event == "persisted":  # so the attempt is findable even if this process is killed
+                stderr.write(f"bmd-run: attempt {value} recorded\n")
+            return
+        text = machine_output.render_run_event(event, value, structure_name)
+        if text is not None:
+            emit(text)
+
+    try:
+        args = build_run_parser().parse_args(argv)
+        want_json = args.json
+        structure_name = Path(args.structure_file).name
+        if args.desired_output is None and args.custom_workflow is None:
+            args.desired_output = DEFAULT_DESIRED_OUTPUT
+        api_url = args.api_url or environ.get(API_URL_ENV) or DEFAULT_API_URL
+        timeout = API_DEFAULT_TIMEOUT_S if args.timeout is None else args.timeout
+        scientific_request, source = _api_request(args)
+        request = {**machine.request_summary(scientific_request), "structure_source": source}
+        token = load_token(args.token_file, environ)
+        fragments = token.secret_fragments()
+        api = api_transport_factory(api_url, token, environ=environ, timeout=timeout)
+        api_url = api.base_url
+        store = AttemptStore(Path(args.state_dir).expanduser() if args.state_dir else default_state_dir(environ))
+        progress = machine.run(api, store, scientific_request, source, on_event=on_event)
+    except ClientError as error:
+        return _run_failed(error, progress, want_json, api_url, request, fragments, stdout, stderr)
+    except machine.RunStopped as stopped:
+        progress = stopped.progress
+        if isinstance(stopped.error, KeyboardInterrupt):
+            error = UsageError(
+                "Interrupted. The outcome of the request in progress is unknown.",
+                suggestion="Check the attempt before doing anything else.",
+            )
+            _run_failed(error, progress, want_json, api_url, request, fragments, stdout, stderr)
+            return 130
+        return _run_failed(stopped.error, progress, want_json, api_url, request, fragments, stdout, stderr)
+
+    if want_json:
+        stdout.write(_redact(machine_output.to_json(machine_output.run_envelope(
+            api_url=api_url, request=request, progress=progress, error=None)), fragments))
+    else:
+        emit(machine_output.render_run_footer(progress))
+    return EXIT_OK
+
+
+def _run_failed(error, progress, want_json, api_url, request, fragments, stdout, stderr) -> int:
+    stage, attempt_id = progress.get("stage", "plan"), progress.get("attempt_id")
+    error.suggestion = machine_output.run_suggestion(error, stage, attempt_id)
+    if want_json:
+        stdout.write(_redact(machine_output.to_json(machine_output.run_envelope(
+            api_url=api_url, request=request, progress=progress, error=error)), fragments))
+    else:
+        stderr.write(_redact(machine_output.render_run_error(error, progress), fragments) + "\n")
+    return error.exit_code
 
 
 def _read_custom_workflow(path_text: str) -> dict:

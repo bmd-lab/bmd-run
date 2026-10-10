@@ -43,6 +43,10 @@ for BMD Compute's machine API v1 (bmd-compute `e3fbb3b`, `docs/machine_api.md`):
 | `bmd-run api submit` | Submit the same recorded attempt (`submit=true`) | `PUT /api/v1/attempts/{uuid}` | `submit` |
 | `bmd-run api status` | The attempt's authoritative state | `GET /api/v1/attempts/{uuid}` | `read` |
 
+Milestone R2 adds the recommended one-command form, `bmd-run STRUCTURE [options]`,
+which performs `api prepare` followed by `api submit` for the same new attempt. It
+uses no other routes or scopes (`plan`, `prepare`, `submit`).
+
 No other HTTP method or path is part of `bmd-run`'s authority. The attempt path
 is built only from a validated canonical lowercase UUID, no query string is ever
 sent, and each transport re-checks requests against its own literal allowlist.
@@ -128,6 +132,29 @@ bmd-compute `e3fbb3b` (`api_vocabulary.py`), bounded numbers, and
 pattern-checked digests, job IDs and timestamps. Compute's error messages,
 suggestions, option prose, module names and the space-group symbol are not
 relayed; errors carry client text and the recognised Compute code.
+
+## One Command (Milestone R2)
+
+`bmd-run STRUCTURE` is a thin sequence over the R1 operations, not a second
+execution path. `machine.run` calls `machine.prepare_new` (plan, record the attempt
+with an exclusive create, Prepare with `submit=false`) and then `machine.submit` for
+the same attempt ID (the recorded request with `submit=true`). It adds no request
+building, state, retries or error classification: R1's errors propagate unchanged,
+wrapped only with how far the run got and the attempt ID, so the CLI can print the
+R1 recovery commands (`api prepare --attempt`, `api submit`, `api status`).
+Consequences:
+
+- a failed plan records nothing; once recorded, an attempt is never replaced, and a
+  failure or uncertainty in Prepare stops the run before any submission;
+- an uncertain submission keeps R1's classification (exit 15) and is never retried;
+  running `bmd-run STRUCTURE` again deliberately starts a new attempt;
+- the default workflow (Compute's `energy_only` Desired Output) and the shortcut
+  aliases are the only client-side choices, and they are Compute identifiers.
+
+Dispatch is by the first positional argument: the command names `identity`,
+`options`, `analyze`, `plan` and `api`, and reserved words such as `prepare`,
+`submit`, `status`, `run` and `batch`, select the existing commands (or their usage
+errors); anything else is a structure file.
 
 ## Compute And POWER
 

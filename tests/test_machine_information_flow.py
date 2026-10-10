@@ -81,10 +81,13 @@ def render(kind, body, name):
         if kind == "plan":
             result = machine.project_plan(body, case["request"]["body"])
             text = machine_output.render_plan(result)
+            # bmd-run STRUCTURE (R2) renders the same projection as a short summary.
+            text += "\n" + machine_output.render_run_plan(result, "Si.POSCAR")
         elif kind == "attempt":
             attempt_id = case["request"]["path"].rsplit("/", 1)[1]
             result = {"attempt": machine.project_attempt(body, attempt_id=attempt_id, expected_plan_digest=None), "local": None}
             text = machine_output.render_result("status", result)
+            text += "\n" + machine_output.render_run_event("submitted", result["attempt"], "Si.POSCAR")
         else:
             attempt_id = case["request"]["path"].rsplit("/", 1)[1] if "attempts" in case["request"]["path"] else None
             error = machine.classify_error(ApiResponse(case["response"]["status"], body), scope="submit",
@@ -92,7 +95,10 @@ def render(kind, body, name):
             raise error
     except ClientError as error:
         document = machine_output.envelope(command="status", api_url=None, request=None, result=None, error=error)
-        return document, machine_output.to_json(document), machine_output.render_error(error)
+        progress = {"stage": "submit", "attempt_id": "6f1d2c3b-4a59-4e68-8b7a-9c0d1e2f3a4b"}
+        error.suggestion = machine_output.run_suggestion(error, progress["stage"], progress["attempt_id"])
+        text = machine_output.render_error(error) + "\n" + machine_output.render_run_error(error, progress)
+        return document, machine_output.to_json(document), text
     document = machine_output.envelope(command="plan" if kind == "plan" else "status", api_url=None,
                                        request=None, result=result, error=None)
     return document, machine_output.to_json(document), text

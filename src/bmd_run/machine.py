@@ -867,11 +867,19 @@ def _check_origin(record: dict, api: ApiTransport) -> None:
 
 def prepare_new(api: ApiTransport, store: AttemptStore, request: dict, structure_source: dict, *,
                 expected_plan_digest: Optional[str] = None,
-                new_attempt_id: Callable[[], str] = lambda: str(uuid.uuid4())) -> dict:
-    """Plan, bind, persist, then prepare (``submit=false``)."""
+                new_attempt_id: Callable[[], str] = lambda: str(uuid.uuid4()),
+                on_planned: Optional[Callable[[dict], None]] = None,
+                on_persisted: Optional[Callable[[str, str], None]] = None) -> dict:
+    """Plan, bind, persist, then prepare (``submit=false``).
+
+    ``on_planned(plan)`` and ``on_persisted(attempt_id, record_path)`` are optional progress
+    notifications (used by the one-command ``bmd-run STRUCTURE``); they change nothing here.
+    """
 
     store.ensure()
     planned = plan(api, request)
+    if on_planned is not None:
+        on_planned(planned)
     digest = planned["plan_digest"]
     if expected_plan_digest is not None and digest != expected_plan_digest:
         raise PlanDigestMismatch(
@@ -885,6 +893,8 @@ def prepare_new(api: ApiTransport, store: AttemptStore, request: dict, structure
     record = new_record(attempt_id=attempt_id, api_origin=api.base_url, request=request,
                         structure_source=structure_source, expected_plan_digest=digest)
     path = store.create(record)  # persisted before any remote side effect
+    if on_persisted is not None:
+        on_persisted(attempt_id, str(path))
     result = _send_prepare(api, store, record)
     return {"plan": planned, **result, "record_path": str(path)}
 
@@ -1093,3 +1103,51 @@ def _local(record: dict) -> dict:
         "request": request_summary(record["request"]),
         "structure_source": dict(record["structure_source"]),
     }
+
+
+# ===================================================== one command: bmd-run STRUCTURE
+
+RUN_STAGES = ("plan", "prepare", "submit", "complete")
+
+
+class RunStopped(Exception):
+    """``run`` stopped at ``stage``; ``error`` is the unchanged R1 error, ``progress`` what completed."""
+
+    def __init__(self, error: BaseException, progress: dict) -> None:
+        super().__init__(str(error))
+        self.error = error
+        self.progress = progress
+
+
+def run(api: ApiTransport, store: AttemptStore, request: dict, structure_source: dict, *,
+        on_event: Optional[Callable[[str, Any], None]] = None) -> dict:
+    """Plan, persist, Prepare and Submit one new attempt, using only the R1 operations above.
+
+    This is ``prepare_new`` followed by ``submit`` for the same attempt ID: no new request
+    building, state, retry or classification. Errors propagate unchanged inside
+    :class:`RunStopped`, which also records how far the run got and the attempt ID once it
+    has been persisted, so the caller can point to the R1 recovery commands.
+    """
+
+    notify = on_event or (lambda event, value: None)
+    progress: dict = {"stage": "plan", "plan": None, "attempt_id": None, "record_path": None,
+                      "prepared": None, "submitted": None, "local": None}
+
+    def planned(plan_result: dict) -> None:
+        progress["plan"] = plan_result
+        notify("planned", plan_result)
+
+    def persisted(attempt_id: str, record_path: str) -> None:
+        progress.update(stage="prepare", attempt_id=attempt_id, record_path=record_path)
+        notify("persisted", attempt_id)
+
+    try:
+        prepared = prepare_new(api, store, request, structure_source, on_planned=planned, on_persisted=persisted)
+        progress.update(stage="submit", prepared=prepared["attempt"], local=prepared["local"])
+        notify("prepared", prepared["attempt"])
+        submitted = submit(api, store, progress["attempt_id"])
+    except (ClientError, KeyboardInterrupt) as error:
+        raise RunStopped(error, progress) from None
+    progress.update(stage="complete", submitted=submitted["attempt"], local=submitted["local"])
+    notify("submitted", submitted["attempt"])
+    return progress
