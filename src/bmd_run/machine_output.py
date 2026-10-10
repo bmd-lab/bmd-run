@@ -239,7 +239,7 @@ def run_suggestion(error: ClientError, stage: str, attempt_id: Optional[str]) ->
     text = (error.suggestion or "").replace("Retry the same command", "Retry with the same attempt ID").strip()
     return ((text + " ") if text else "") + (
         f"Use the recovery commands for attempt {attempt_id}; "
-        "running 'bmd-run STRUCTURE' again creates a new attempt."
+        "running 'bmd-run' again creates a new attempt."
     )
 
 
@@ -325,5 +325,5 @@ def render_run_error(error: ClientError, progress: dict) -> str:
     lines.append(f"  Stopped during: {stage}")
     lines.append(f"  Attempt {attempt_id} is recorded. Continue or check it with the same attempt ID:")
     lines += [f"    {command}" for command in run_recovery(stage, attempt_id)]
-    lines.append("  Do not run 'bmd-run STRUCTURE' again for this calculation: that creates a new attempt.")
+    lines.append("  Do not run 'bmd-run' again for this calculation: that creates a new attempt.")
     return "\n".join(lines)

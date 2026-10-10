@@ -16,30 +16,62 @@ capability for one calculation at a time through BMD Compute's machine API v1
 
 ## Running a calculation
 
-The recommended interface is one structure, one command, one BMD Compute calculation:
+The recommended interface is one structure, one command, one BMD Compute calculation.
+In a directory that contains a file named `POSCAR`:
 
 ```
-bmd-run Si.vasp --desired-output energy
+bmd-run              # Energy only (BMD Compute's default Desired Output)
+bmd-run --relax      # Relaxed structure
+bmd-run --dos        # Electronic DOS
+bmd-run --bands      # Electronic band structure
+bmd-run --custom workflow.json
 ```
 
-With optional overrides, or a Custom workflow:
+Or name the structure file, with optional overrides:
 
 ```
-bmd-run Bi2Se3.cif --desired-output bands --cpus 48 --memory-gb 128 --walltime 48:00:00
+bmd-run Si.vasp
+bmd-run Bi2Se3.cif --bands --cpus 48 --memory-gb 128 --walltime 48:00:00
+bmd-run Si.vasp --desired-output energy        # the R2 form, still supported
 bmd-run Si.vasp --custom-workflow workflow.json
 ```
 
-`bmd-run STRUCTURE` asks BMD Compute for the authoritative plan, prints a short
+| Option | BMD Compute workflow |
+| --- | --- |
+| (none) | Desired Output `energy_only` |
+| `--relax` | Desired Output `relaxed_structure` |
+| `--dos` | Desired Output `electronic_dos` |
+| `--bands` | Desired Output `electronic_band_structure` |
+| `--custom FILE` | Custom workflow from FILE (same as `--custom-workflow FILE`) |
+| `--desired-output ID` | any Desired Output identifier, or `energy`/`relax`/`dos`/`bands` |
+
+Only one workflow option may be given; combining any two (for example `--relax --dos`
+or `--dos --desired-output energy`) is an error and nothing is sent.
+
+**Which structure.** If a structure file is named, it is used. Otherwise `bmd-run`
+uses the file named exactly `POSCAR` in the current directory, read as POSCAR. It
+does not look anywhere else (no parent or sub-directories, no `CONTCAR`, `*.vasp` or
+`*.cif`, no guessing), and it never modifies, renames or copies the file. If there
+is no `./POSCAR`, it stops with an error before contacting BMD Compute. `--format`
+applies only to a named file. A structure that BMD Compute rejects fails at the plan
+step, before any attempt is recorded.
+
+**Every invocation is a new calculation.** Running `bmd-run` twice in the same
+directory submits two calculations with two attempts; `bmd-run` does not detect
+repeats. To continue or check an earlier run, use its attempt ID with the `api`
+commands below, never `bmd-run` again.
+
+`bmd-run` asks BMD Compute for the authoritative plan, prints a short
 summary, records the attempt locally, then has BMD Compute prepare it on POWER and
 submit it to SLURM. It submits without asking for confirmation: that is what the
 command is for. It prints the attempt ID, the SLURM job ID and how to check the job.
 
 - **Structure:** a POSCAR or CIF file (`.cif` is read as CIF; `--format` overrides).
   The file's text is sent unchanged and the file is never modified.
-- **Workflow:** `--desired-output` takes a BMD Compute Desired Output identifier or a
-  shortcut (`energy`, `relax`, `dos`, `bands`); `--custom-workflow FILE.json` takes
-  BMD Compute's Custom stage schema. They cannot be combined. With neither, BMD
-  Compute's Energy-only Desired Output is used, as in the browser interface.
+- **Workflow:** one of the options in the table above. The values sent are BMD
+  Compute's own identifiers; `--custom`/`--custom-workflow` take BMD Compute's Custom
+  stage schema. With none, BMD Compute's Energy-only Desired Output is used, as in
+  the browser interface. `bmd-run` infers no methodology.
 - **Overrides:** `--cpus`, `--memory-gb`, `--walltime HH:MM:SS` and `--queue` are
   passed to BMD Compute as given; BMD Compute validates them and fills in everything
   else. `bmd-run` adds no methodology, defaults or resource choices of its own.
@@ -61,7 +93,7 @@ bmd-run api status UUID              # what BMD Compute reports now
 A submission whose outcome is unknown (a lost response, a timeout, an unreadable
 answer) is reported as **uncertain** (exit 15), never as failed, and is never retried
 automatically: check it with `api status` or repeat `api submit` with the same ID.
-Running `bmd-run STRUCTURE` again starts a **new** calculation with a new attempt, so
+Running `bmd-run` again starts a **new** calculation with a new attempt, so
 do not use it to recover. If the process is killed before it can print the ID, the
 attempt is still recorded as `<state dir>/attempts/<attempt id>.json` (default
 `~/.local/state/bmd-run/attempts/`); with `--json` the ID is also written to stderr
@@ -70,7 +102,10 @@ as soon as it is recorded.
 The `api` commands remain available for advanced, step-by-step use (plan only,
 prepare without submitting) and for recovery. A future milestone, `bmd-run batch`,
 is planned for many structures; it is not part of this release. A structure file
-named like a command (`plan`, `api`, `submit`, ...) must be given as `./NAME`.
+named like a command (`plan`, `api`, `submit`, ...) or like an option (`--dos`) must
+be given as `./NAME`. `bmd-run --help` and `bmd-run --version` never start a
+calculation; `bmd-run POSCAR --help` (or `bmd-run --relax --help`) shows the options
+of the one-command interface.
 
 ## What it can do
 
@@ -223,7 +258,7 @@ credentials, SSH settings, remote paths or submission identity tokens.
 
 ## `--json` output (for synthetic-user testing)
 
-`bmd-run STRUCTURE --json` writes one `schema: "bmd_run.run_output"`,
+`bmd-run [STRUCTURE] --json` writes one `schema: "bmd_run.run_output"`,
 `schema_version: 1` document (`src/bmd_run/schemas/run-output-v1.schema.json`), on
 success and on error. It reports `stage` (`plan`, `prepare`, `submit` or `complete`),
 `attempt_id` once the attempt is recorded, the `recovery` commands, and in `result`

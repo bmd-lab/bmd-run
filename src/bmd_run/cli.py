@@ -1,6 +1,7 @@
 """Command-line interface.
 
-* ``bmd-run STRUCTURE [OPTIONS]``: the recommended one-command interface. It runs one
+* ``bmd-run [STRUCTURE] [--relax | --dos | --bands | --custom FILE] [OPTIONS]``: the
+  recommended one-command interface (without STRUCTURE it uses ./POSCAR). It runs one
   calculation through BMD Compute's machine API by calling the R1 operations in order
   (``machine.run``: plan, record the attempt, prepare, submit). See ``_main_run``.
 * ``bmd-run {identity,options,analyze,plan}``: read/build-only commands against
@@ -50,10 +51,24 @@ API_COMMANDS = ("plan", "prepare", "submit", "status")
 COMMAND_NAMES = ("identity", "options", "analyze", "plan", "api")
 RESERVED_WORDS = ("prepare", "submit", "status", "monitor", "resume", "cancel", "run", "batch", "help")
 DEFAULT_DESIRED_OUTPUT = "energy_only"  # Compute's Energy-only Desired Output, as in the UI
+# Desired Output shortcuts of the one-command interface: BMD Compute's own identifiers
+# (api_vocabulary.DESIRED_OUTPUTS), named as in the Compute UI. No option means DEFAULT_DESIRED_OUTPUT.
+DESIRED_OUTPUT_SHORTCUTS = {
+    "--relax": "relaxed_structure",
+    "--dos": "electronic_dos",
+    "--bands": "electronic_band_structure",
+}
+AUTODETECTED_STRUCTURE = "POSCAR"  # used, as POSCAR, when no structure file is given
 _OPTIONS_WITH_VALUES = frozenset({
-    "--compute-url", "--timeout", "--format", "--desired-output", "--custom-workflow", "--cpus",
+    "--compute-url", "--timeout", "--format", "--desired-output", "--custom-workflow", "--custom", "--cpus",
     "--memory-gb", "--walltime", "--queue", "--api-url", "--token-file", "--state-dir",
 })
+# With no positional argument these keep the existing behaviour (help, version, or the
+# read/build commands' usage error) instead of running ./POSCAR ...
+_NO_RUN_WITHOUT_STRUCTURE = ("-h", "--help", "--version", "--compute-url")
+# ... except that help asked for together with a one-command workflow option is the
+# one-command help (argparse prints it while parsing, before ./POSCAR is looked for).
+_RUN_HELP_OPTIONS = tuple(DESIRED_OUTPUT_SHORTCUTS) + ("--custom",)
 
 # Convenience spellings only. The values are BMD Compute's own Desired Output
 # identifiers and are passed through unchanged; any other identifier is sent
@@ -101,8 +116,9 @@ def build_parser() -> argparse.ArgumentParser:
         prog="bmd-run",
         description=(
             "Restricted client for BMD Compute. To run one calculation: "
-            "'bmd-run STRUCTURE [--desired-output ID | --custom-workflow FILE] [resources]' "
-            "(see 'bmd-run STRUCTURE --help'); BMD Compute plans, prepares and submits it. "
+            "'bmd-run [STRUCTURE] [--relax | --dos | --bands | --custom FILE] [resources]' "
+            "(without STRUCTURE, ./POSCAR is used; see 'bmd-run STRUCTURE --help'). "
+            "BMD Compute plans, prepares and submits it. "
             "The 'api' commands are the same machine-API operations one at a time, for advanced "
             "use and recovery. The identity, options, analyze and plan commands are read/build-only "
             "against BMD Compute v1.0.0 and cannot prepare or submit."
@@ -266,7 +282,12 @@ def main(
     stderr = stderr or sys.stderr
     environ = os.environ if environ is None else environ
     first = _first_positional(argv)
-    if first is not None and argv[first] not in COMMAND_NAMES + RESERVED_WORDS:
+    if first is None:
+        names = {item.split("=", 1)[0] for item in argv}
+        if not names & set(_NO_RUN_WITHOUT_STRUCTURE) or (
+                names & {"-h", "--help"} and names & set(_RUN_HELP_OPTIONS) and "--version" not in names):
+            return _main_run(argv, api_transport_factory, environ, stdout, stderr)  # ./POSCAR, or its help
+    elif argv[first] not in COMMAND_NAMES + RESERVED_WORDS:
         return _main_run(argv, api_transport_factory, environ, stdout, stderr)
     if "api" in argv[: _first_command_index(argv) + 1]:
         return _main_api(argv, api_transport_factory, environ, stdout, stderr)
@@ -376,19 +397,27 @@ def _first_positional(argv: List[str]) -> Optional[int]:
 def build_run_parser() -> argparse.ArgumentParser:
     parser = _ArgumentParser(
         prog="bmd-run",
-        usage="bmd-run STRUCTURE [--desired-output ID | --custom-workflow FILE] [options]",
+        usage="bmd-run [STRUCTURE] [--relax | --dos | --bands | --custom FILE | --desired-output ID] [options]",
         description=(
             "Run one calculation on POWER through BMD Compute: request the plan, record the attempt "
             "locally, prepare it and submit it, without prompting. BMD Compute decides the methodology, "
             "inputs and resources; bmd-run only sends your structure, workflow choice and overrides. "
-            "Without --desired-output or --custom-workflow, BMD Compute's Energy-only Desired Output is "
-            "used. Recover or inspect an attempt with 'bmd-run api prepare --attempt UUID', "
+            "Without STRUCTURE, the file POSCAR in the current directory is used. Without a workflow "
+            "option, BMD Compute's Energy-only Desired Output is used. Each invocation is a new "
+            "calculation. Recover or inspect an attempt with 'bmd-run api prepare --attempt UUID', "
             "'bmd-run api submit UUID' and 'bmd-run api status UUID'."
         ),
     )
-    parser.add_argument("structure_file", metavar="STRUCTURE", help="POSCAR or CIF file (read only).")
-    parser.add_argument("--format", choices=_FORMATS, default=None, help="Default: from the file name (.cif is CIF).")
+    parser.add_argument("structure_file", metavar="STRUCTURE", nargs="?", default=None,
+                        help=f"POSCAR or CIF file (read only). Default: ./{AUTODETECTED_STRUCTURE}.")
+    parser.add_argument("--format", choices=_FORMATS, default=None,
+                        help="For an explicit STRUCTURE: default from the file name (.cif is CIF).")
     workflow = parser.add_mutually_exclusive_group()
+    for flag, identifier in DESIRED_OUTPUT_SHORTCUTS.items():
+        workflow.add_argument(flag, dest="shortcut", action="store_const", const=identifier, default=None,
+                              help=f"BMD Compute Desired Output {identifier}.")
+    workflow.add_argument("--custom", dest="custom_shortcut", metavar="FILE", default=None,
+                          help="Custom workflow JSON file (same as --custom-workflow).")
     workflow.add_argument(
         "--desired-output", default=None,
         help="BMD Compute Desired Output id, or alias: " + ", ".join(
@@ -434,7 +463,12 @@ def _main_run(argv, api_transport_factory, environ, stdout, stderr) -> int:
     try:
         args = build_run_parser().parse_args(argv)
         want_json = args.json
+        _select_structure(args)
         structure_name = Path(args.structure_file).name
+        if args.shortcut is not None:
+            args.desired_output = args.shortcut
+        if args.custom_shortcut is not None:
+            args.custom_workflow = args.custom_shortcut
         if args.desired_output is None and args.custom_workflow is None:
             args.desired_output = DEFAULT_DESIRED_OUTPUT
         api_url = args.api_url or environ.get(API_URL_ENV) or DEFAULT_API_URL
@@ -466,6 +500,22 @@ def _main_run(argv, api_transport_factory, environ, stdout, stderr) -> int:
     else:
         emit(machine_output.render_run_footer(progress))
     return EXIT_OK
+
+
+def _select_structure(args) -> None:
+    """Use ./POSCAR (as POSCAR) when no structure file is given; never search further."""
+
+    if args.structure_file is not None:
+        return
+    if args.format is not None:
+        raise UsageError("--format applies only to an explicit structure file; ./POSCAR is always read as POSCAR.")
+    if not Path(AUTODETECTED_STRUCTURE).is_file():
+        raise UsageError(
+            f"No structure file was given and there is no {AUTODETECTED_STRUCTURE} file in the current directory.",
+            suggestion=f"Run 'bmd-run STRUCTURE_FILE', or run 'bmd-run' in a directory that contains {AUTODETECTED_STRUCTURE}.",
+        )
+    args.structure_file = AUTODETECTED_STRUCTURE
+    args.format = "poscar"
 
 
 def _run_failed(error, progress, want_json, api_url, request, fragments, stdout, stderr) -> int:
