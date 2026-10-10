@@ -341,7 +341,7 @@ class Dispatch(RunBase):
         cwd = os.getcwd()
         os.chdir(self.ws.root)
         try:
-            for word in ("prepare", "submit", "status", "monitor", "resume", "run", "batch"):
+            for word in ("prepare", "submit", "status", "monitor", "resume", "run"):  # 'batch' is a command (R3A)
                 code, out, _ = self.run_cli("--json", word, run_schema=False)
                 self.assertEqual(code, errors.EXIT_USAGE, word)
                 self.assertEqual(json.loads(out)["schema"], "bmd_run.output", word)

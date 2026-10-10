@@ -208,6 +208,9 @@ class FakeCompute:
                           "plan_digest": digest, "state": "registered", "requested": False, "job_id": None,
                           "scheduler": None}
                 self.ledger[attempt_id] = record
+            if fault == "attempt_cap_exceeded" and existing is None:
+                del self.ledger[attempt_id]  # refused before the attempt is registered
+                return self._error(429, "attempt_cap_exceeded")
             if fault == "prepare_failed" and record["state"] == "registered":
                 return self._error(502, "prepare_failed")
             if record["state"] == "registered":

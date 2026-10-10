@@ -60,12 +60,13 @@ sent, and each transport re-checks requests against its own literal allowlist.
 - arbitrary HTTP paths or methods;
 - SSH, SFTP, SLURM, tunnels or subprocess execution;
 - Git, MongoDB or other database access;
-- filesystem writes other than its own private attempt records;
+- filesystem writes other than its own private attempt and campaign records;
 - arbitrary INCAR, KPOINTS, POTCAR or scientific-methodology editing, or any
   local inference of automatic treatments;
 - access to Compute submission identity tokens, attempt fingerprints, SSH
   profiles, remote paths or SLURM scripts;
-- Materials Project retrieval, batch manifests or campaign scheduling.
+- Materials Project retrieval, resource prediction, adaptive experimental design
+  or any campaign scheduling beyond running a given manifest in order.
 
 The client may display Compute-resolved provenance in safe, bounded output. That
 currently includes the resolved POWER partition and account, plus bounded CPU,
@@ -153,8 +154,8 @@ Consequences:
 
 Dispatch is by the first positional argument: the command names `identity`,
 `options`, `analyze`, `plan` and `api`, and reserved words such as `prepare`,
-`submit`, `status`, `run` and `batch`, select the existing commands (or their usage
-errors); anything else is a structure file.
+`submit`, `status` and `run`, select the existing commands (or their usage errors);
+`batch` selects the batch command (R3A); anything else is a structure file.
 
 ### POSCAR autodetection and shortcuts (R2.1)
 
@@ -171,6 +172,36 @@ argument, `--help`, `-h`, `--version` and the read/build-only `--compute-url` ke
 their previous meaning (help, version, or the read/build usage error), so they never
 start a calculation; help together with a shortcut or `--custom` shows the
 one-command help. There is no duplicate detection: each invocation is a new attempt.
+
+## Batch (Milestone R3A)
+
+`bmd-run batch MANIFEST` (`batch.py`) is a loop over the R1 operations, not a second
+execution engine. The CLI builds every cell's request with the single-calculation
+builder before anything is sent. The only new state is one private record per cell
+(`attempt_store.CampaignStore`, `<state dir>/campaigns/<campaign>/<cell>.json`, same
+directory and file rules as attempt records). It is created exclusively before the
+cell's attempt UUID is first used (the UUID still comes from
+`machine.generate_attempt_id`), so a cell is bound to one attempt for good and a
+concurrent run cannot bind a second one. It holds the request's SHA-256 (the request
+itself is in the attempt record), the client's projection of the plan and the last
+observed attempt and scheduler state, under a closed schema checked on every read.
+`run_batch` holds an exclusive, non-blocking `flock` on
+`<state dir>/campaigns/<campaign>.lock` (`CampaignStore.campaign_lock`) from before it
+reads any cell until the loop ends, so only one invocation advances a campaign and
+`--max-new` holds across concurrent invocations; a second one fails before reading or
+sending anything. The lock is keyed by the campaign's state, not the manifest path,
+and the kernel releases it when the process exits. `batch status` takes no lock.
+
+Advancing a cell uses only `prepare_new` (with the reserved UUID and, if the cell
+already holds a plan, that plan's digest as `expected_plan_digest`),
+`prepare_resume` and `submit`. A submitted attempt is never touched, and an attempt
+in `submit_unconfirmed` or `submission_uncertain` is never submitted again by the
+batch. At most `--max-new` (default 1, at most 20) new attempts are started per
+run. Errors that concern one cell's request or attempt are recorded on the cell and
+the loop continues; every other error (quotas, uncertainty, connectivity,
+credentials, local state) stops the loop, leaving later cells untouched. `batch
+status` uses only `machine.status` (`GET`). Memory is always reported as the
+requested allocation (`requested_memory_gb`), never as measured usage.
 
 ## Compute And POWER
 
