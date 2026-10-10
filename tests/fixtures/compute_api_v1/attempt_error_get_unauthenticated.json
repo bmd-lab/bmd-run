@@ -1,0 +1,20 @@
+{
+  "case": "attempt_error_get_unauthenticated",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/api/v1/attempts/6f1d2c3b-4a59-4e68-8b7a-9c0d1e2f3a4b",
+    "principal": null
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "unauthenticated",
+        "message": "A valid BMD Compute API bearer token is required."
+      }
+    },
+    "content_type": "application/json",
+    "status": 401
+  }
+}

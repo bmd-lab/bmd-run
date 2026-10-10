@@ -1,0 +1,30 @@
+{
+  "case": "attempt_error_submit_failed",
+  "request": {
+    "body": {
+      "expected_plan_digest": "sha256:b762368841efaf06189865fd55debd4bf8659b888b501d612c99903068d8a467",
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "submit": true,
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "PUT",
+    "path": "/api/v1/attempts/4e5f6a7b-8c9d-4e0f-8a1b-2c3d4e5f6a7b",
+    "principal": "runner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "submit_failed",
+        "message": "SLURM did not accept the submission; the attempt remains prepared."
+      }
+    },
+    "content_type": "application/json",
+    "status": 502
+  }
+}

@@ -8,8 +8,10 @@ that need to exercise `bmd-compute` the way an ordinary student would.
 its architectural role, not its name: the product, repository, command,
 distribution and import package are all `bmd-run` / `bmd_run`.
 
-**Status: proof of concept against frozen `bmd-compute` v1.0.0 (read/build only).**
-See `ARCHITECTURE.md` for the design and its reasoning.
+**Status:** the read/build commands are a proof of concept against frozen
+`bmd-compute` v1.0.0. Milestone R1 adds a separate, authenticated `bmd-run api`
+capability for one calculation at a time through BMD Compute's machine API v1
+(bmd-compute `e3fbb3b`). See `ARCHITECTURE.md` for the design and its reasoning.
 
 ## What it can do
 
@@ -20,22 +22,44 @@ See `ARCHITECTURE.md` for the design and its reasoning.
 | `analyze FILE` | Compute's structure summary, method considerations and default workflow | `POST /analyze` |
 | `plan OUTPUT FILE` | Compute's resolved workflow and resources, then consideration status, structure facts, and per-stage INCAR/KPOINTS rebuilt by the client | `POST /build-workflow` |
 
+The separate `api` commands (Milestone R1, see below) use BMD Compute's
+authenticated machine API:
+
+| Command | What it does | Compute requests | Token scope |
+|---|---|---|---|
+| `api plan FILE` | The authoritative plan and its digest. No side effects. | `POST /api/v1/plans` | `plan` |
+| `api prepare FILE` | Plan, record a new attempt locally, prepare it on POWER (`submit=false`) | `POST /api/v1/plans`, `PUT /api/v1/attempts/{uuid}` | `plan`, `prepare` |
+| `api prepare --attempt UUID` | Repeat Prepare for a recorded attempt, from its record only | `PUT /api/v1/attempts/{uuid}` | `prepare` |
+| `api submit UUID` | Submit that same attempt (`submit=true`, nothing else changed) | `PUT /api/v1/attempts/{uuid}` | `submit` |
+| `api status UUID` | The attempt's state, job ID and scheduler state | `GET /api/v1/attempts/{uuid}` | `read` |
+
 ## What it cannot do
 
 It has no implementation of, and no hidden path to:
 
-- Prepare, Submit, Monitor or Resume;
-- SSH, SFTP or SLURM;
+- SSH, SFTP or SLURM (BMD Compute alone connects to POWER and submits);
+- creating SSH tunnels, running processes or remote commands;
+- Monitor, Resume, cancellation or result retrieval;
+- Materials Project retrieval, batch manifests or campaigns;
 - Git or MongoDB;
 - arbitrary HTTP.
 
-The complete list of requests it can make is the closed table in
-`src/bmd_run/endpoints.py`:
+The read/build commands cannot prepare or submit. The complete list of requests
+the client can make is two closed tables. The frozen v1 table
+(`src/bmd_run/endpoints.py`, unchanged):
 
 ```
 GET  /openapi.json
 POST /analyze
 POST /build-workflow
+```
+
+and the authenticated machine-API table (`src/bmd_run/api_endpoints.py`):
+
+```
+POST /api/v1/plans
+PUT  /api/v1/attempts/{canonical lowercase UUID}
+GET  /api/v1/attempts/{canonical lowercase UUID}
 ```
 
 It contains no scientific methodology and does no scientific validation.
@@ -73,6 +97,66 @@ Any other identifier is sent as typed, and Compute accepts or rejects it. Under
 v1.0.0, `dos` resolves to **PBE geometry optimisation → HSE06 static → HSE06 DOS**,
 which is why `plan` prints the resolved workflow and resources first.
 
+## Authenticated machine API (`bmd-run api`, Milestone R1)
+
+```
+bmd-run on POWER -> HTTP over your existing SSH tunnel -> bmd-compute on the VM -> Compute-owned POWER execution
+```
+
+`bmd-run` stays a client. BMD Compute alone decides methodology, workflow
+construction, automatic treatments, resources, remote preparation and SLURM
+submission. `bmd-run` sends only what you give it: the structure file's text
+(read, never modified), a Desired Output identifier or a Custom workflow in
+Compute's stage schema, and optional `--cpus`, `--memory-gb`, `--walltime`,
+`--queue`. It fills in no defaults and infers nothing.
+
+```
+# once: store the token BMD Compute issued you, readable only by you
+mkdir -p ~/.config/bmd-run && install -m 600 /dev/null ~/.config/bmd-run/api-token
+cat > ~/.config/bmd-run/api-token        # paste the token, then Ctrl-D
+
+bmd-run api plan POSCAR --desired-output energy_only          # review the plan and its digest
+bmd-run api prepare POSCAR --desired-output energy_only \
+        --expect-plan-digest sha256:...                         # optional: bind to the reviewed plan
+bmd-run api submit 6f1d2c3b-...                                 # the attempt ID prepare printed
+bmd-run api status 6f1d2c3b-...
+bmd-run api plan structure.cif --custom-workflow stages.json  # {"stages": [{"stage_type": ..., "theory": ...}]}
+```
+
+**Transport and credentials.** The default API origin is `http://127.0.0.1:18000`,
+the POWER end of the existing SSH tunnel (`--api-url` or `BMD_RUN_API_URL` to
+change it). Credentials are sent only to `http://127.0.0.1:PORT` or
+`http://[::1]:PORT`; host names such as `localhost` and every other plain-HTTP
+host are refused, and HTTPS is refused unless `BMD_RUN_API_ALLOW_REMOTE_HTTPS=1`
+records a reviewed deployment (certificates are always verified). The token is
+read from `--token-file`, else `BMD_RUN_API_TOKEN_FILE`, else
+`~/.config/bmd-run/api-token` (a regular file owned by you, mode 600), or from
+`BMD_RUN_API_TOKEN`. It goes only into the `Authorization` header: never into
+URLs, output, logs or attempt records. `bmd-run` never opens SSH connections,
+tunnels or processes itself.
+
+**Attempts and recovery.** `api prepare` asks Compute for the plan, records its
+digest, chooses a UUID, and writes the attempt record (mode 600, under
+`--state-dir`, `BMD_RUN_STATE_DIR`, `$XDG_STATE_HOME/bmd-run` or
+`~/.local/state/bmd-run`, directories mode 700) **before** sending Prepare. The
+record holds the attempt UUID, the Compute API origin, the exact request and its
+SHA-256, the expected plan digest and the locally observed state; never
+credentials, SSH settings, remote paths or submission identity tokens.
+
+- `api submit` and `api prepare --attempt` re-send the recorded request; they take
+  no structure, workflow or resource arguments, so changed CLI defaults can never
+  change a resumed request. A record whose request no longer matches its stored
+  SHA-256 (accidental corruption, a partial edit) is refused. This is a
+  consistency check, not tamper protection: a record deliberately edited and
+  rehashed by its owner is not guaranteed to be detected, and deliberate local
+  modification is outside the threat model. Once Compute has registered an
+  attempt UUID, Compute's binding of that UUID to its request is authoritative
+  and a changed request is refused (exit 14).
+- After a timeout or lost response, repeat the same command with the same
+  attempt ID, or run `api status`. A new UUID is never generated automatically.
+- An uncertain submission (exit 15) is never answered by another attempt.
+  BMD Compute never submits one attempt twice.
+
 ## `--json` output (for synthetic-user testing)
 
 Every command accepts `--json`, before or after the command name. It then
@@ -92,6 +176,13 @@ v1's HTML pages.
 Every object in the schema is closed (`additionalProperties: false`), and
 vocabulary fields are `enum`s. Schema versions 1 and 2 relayed Compute text.
 They were never released and are superseded.
+
+The `api` commands write `schema: "bmd_run.machine_output"`, `schema_version: 1`
+(`src/bmd_run/schemas/machine-output-v1.schema.json`) with the same rules: no
+Compute prose (error messages, suggestions, option text, module names, the
+space-group symbol) is relayed; vocabulary values are the client's copies of a
+closed vocabulary pinned to bmd-compute `e3fbb3b` (`api_vocabulary.py`);
+digests, job IDs and timestamps are re-rendered after strict pattern checks.
 
 ## No Compute text reaches output
 
@@ -169,6 +260,19 @@ sending anything.
 | 3 | Compute unreachable |
 | 4 | Unexpected response / contract mismatch |
 | 5 | `identity --strict` fingerprint mismatch |
+| 10 | `api`: authentication failed (token not accepted) |
+| 11 | `api`: the token lacks the scope this command needs |
+| 12 | `api`: invalid structure, workflow, resources or request fields |
+| 13 | `api`: plan digest mismatch (the plan changed; nothing was prepared or submitted) |
+| 14 | `api`: attempt conflict (bound to another request, principal or origin) |
+| 15 | `api`: submission uncertain; check with `api status`, never create a new attempt |
+| 16 | `api`: quota exceeded |
+| 17 | `api`: service unavailable (tunnel down, Compute busy or not configured) |
+| 18 | `api`: network timeout |
+| 19 | `api`: no usable API token |
+| 20 | `api`: attempt not found on Compute |
+| 21 | `api`: local attempt state missing, unsafe, damaged or inconsistent |
+| 22 | `api`: remote preparation or submission failed on POWER |
 
 ## Tests
 
@@ -189,7 +293,14 @@ The suite includes:
   interleaved with client words, and zero-width-joined.
 - an installed-wheel smoke test that builds from a clean source copy, installs
   into a fresh environment, checks `bmd-run --help` / `--version`, imports
-  `bmd_run`, and inspects wheel contents.
+  `bmd_run`, and inspects wheel contents;
+- for `bmd-run api`: a fake BMD Compute served over real HTTP on 127.0.0.1 from
+  responses recorded from bmd-compute `e3fbb3b` with Compute's own in-memory fake
+  POWER (`tests/fixtures/compute_api_v1/`, `tools/record_machine_api_fixtures.py`).
+  It covers POSCAR, CIF, Desired Output and Custom requests, scopes, the endpoint
+  allowlist, persistence before Prepare, Prepare -> Submit, repeated and
+  interrupted requests, changed-request rejection, malformed responses and token
+  redaction, plus an information-flow matrix over every recorded response field.
 
 The matrix checks an information-flow property rather than looking for
 secrets. Every alphabetic word in JSON and human output must be a word owned

@@ -1,0 +1,206 @@
+{
+  "case": "plan_si_cif_energy_only",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "cif",
+        "text": "# generated using pymatgen\ndata_Si\n_symmetry_space_group_name_H-M   'P 1'\n_cell_length_a   3.83958982\n_cell_length_b   3.83958982\n_cell_length_c   3.83958982\n_cell_angle_alpha   60.00000000\n_cell_angle_beta   60.00000000\n_cell_angle_gamma   60.00000000\n_symmetry_Int_Tables_number   1\n_chemical_formula_structural   Si\n_chemical_formula_sum   Si2\n_cell_volume   40.02575175\n_cell_formula_units_Z   2\nloop_\n _symmetry_equiv_pos_site_id\n _symmetry_equiv_pos_as_xyz\n  1  'x, y, z'\nloop_\n _atom_site_type_symbol\n _atom_site_label\n _atom_site_symmetry_multiplicity\n _atom_site_fract_x\n _atom_site_fract_y\n _atom_site_fract_z\n _atom_site_occupancy\n  Si  Si0  1  0.00000000  0.00000000  0.00000000  1\n  Si  Si1  1  0.25000000  0.25000000  0.25000000  1\n"
+      },
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "planner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "automatic_treatments": {
+        "advisory_consideration_ids": [],
+        "applied_treatments": [],
+        "base_workflow": {
+          "label": null,
+          "recipe": "energy_only",
+          "stages": [
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "static",
+              "theory": "pbe"
+            }
+          ]
+        },
+        "desired_output": "energy_only",
+        "dft_u": null,
+        "mode": "bmd_managed_desired_output",
+        "not_applicable_considerations": [],
+        "omitted_treatments": [],
+        "resolved_workflow": {
+          "label": null,
+          "recipe": "energy_only",
+          "stages": [
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "static",
+              "theory": "pbe"
+            }
+          ]
+        },
+        "source": "backend.calculations.default_treatments"
+      },
+      "capability_schema_version": 1,
+      "method_considerations": null,
+      "plan_digest": "sha256:4ac524cbadb744ce6445dcbe0dfd31870b2a7ce54113a315fb658e5983f80beb",
+      "plan_digest_version": 1,
+      "policies": {
+        "automatic_dft_u": {
+          "id": "bmd_compute.dft_u",
+          "version": 1
+        },
+        "custodian": {
+          "id": "bmd_compute.vasp",
+          "version": 1
+        },
+        "method_considerations": {
+          "version": 6
+        },
+        "new_calculation_admission": {
+          "id": "bmd_compute.new_calculation_admission",
+          "version": 1
+        },
+        "plan_digest": {
+          "id": "bmd_compute.plan_digest",
+          "version": 1
+        },
+        "runtime_parity": {
+          "id": "bmd_compute.runtime_parity",
+          "version": 1
+        }
+      },
+      "request": {
+        "desired_output": "energy_only",
+        "structure_format": "cif",
+        "workflow_mode": "desired_output"
+      },
+      "resources": {
+        "account": "power-leeburton-users_v2",
+        "cpus": 24,
+        "memory_gb": 128,
+        "nodes": 1,
+        "partition": "leeburton-pool",
+        "walltime": "72:00:00"
+      },
+      "schema": "bmd_compute.api.plan",
+      "schema_version": 1,
+      "scientific_inputs": {
+        "potcar_functional": "PBE_64",
+        "stages": [
+          {
+            "incar": {
+              "settings": {
+                "ADDGRID": true,
+                "ALGO": "Normal",
+                "EDIFF": 1e-06,
+                "ENCUT": 620.0,
+                "ISMEAR": -5,
+                "ISPIN": 1,
+                "LAECHG": true,
+                "LASPH": true,
+                "LCHARG": true,
+                "LELF": true,
+                "LORBIT": 11,
+                "LREAL": false,
+                "LVTOT": true,
+                "LWAVE": false,
+                "NCORE": 8,
+                "NEDOS": 4001,
+                "NELM": 200,
+                "NSW": 0,
+                "PREC": "Accurate",
+                "SIGMA": 0.05
+              },
+              "sha256": "1725ba4e7fba240cc1dcfad8686d25f3ea11959e56773950af2dcb39a8dcf5c8"
+            },
+            "index": 1,
+            "kpoints": {
+              "kpts": [
+                [
+                  7,
+                  7,
+                  7
+                ]
+              ],
+              "kpts_shift": [
+                0,
+                0,
+                0
+              ],
+              "num_kpts": 0,
+              "sha256": "e0e1cf4c0cd4d5193ff4cfadbc22c1a8aa24e33f40d3a27f1a9feed3f6f5dde0",
+              "style": "Gamma"
+            },
+            "modifiers": [],
+            "options": {},
+            "poscar": {
+              "num_sites": 2,
+              "reduced_formula": "Si",
+              "sha256": "536eb7fa3eddc8d998b3dc6882d734e846694ae657eb091c692f38ba6bde8614"
+            },
+            "potcar_symbols": [
+              "Si"
+            ],
+            "stage_type": "static",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          }
+        ]
+      },
+      "software": {
+        "modules": [
+          "intel/rocky8-oneAPI-2023",
+          "vasp/rocky8-intel-6.4.1"
+        ],
+        "runtime_parity_packages": {
+          "atomate2": "0.1.5",
+          "custodian": "2025.12.14",
+          "emmet-core": "0.87.1",
+          "jobflow": "0.1.19",
+          "pymatgen": "2026.5.4",
+          "pymatgen-core": "2026.7.16",
+          "spglib": "2.7.0"
+        }
+      },
+      "structure": {
+        "canonical_sha256": "f435a1a7ae345b2007a8429ab077c3b8335a3bff1e285d67f7a8cd57270cc84a",
+        "crystal_system": "cubic",
+        "formula": "Si2",
+        "natoms": 2,
+        "reduced_formula": "Si",
+        "space_group_number": 227,
+        "space_group_symbol": "Fd-3m",
+        "volume": 40.026
+      },
+      "workflow": {
+        "recipe": "energy_only",
+        "stage_count": 1,
+        "stages": [
+          {
+            "index": 1,
+            "modifiers": [],
+            "options": {},
+            "stage_type": "static",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          }
+        ]
+      }
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

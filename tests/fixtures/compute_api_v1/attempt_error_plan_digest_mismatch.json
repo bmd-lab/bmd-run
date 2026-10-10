@@ -1,0 +1,31 @@
+{
+  "case": "attempt_error_plan_digest_mismatch",
+  "request": {
+    "body": {
+      "expected_plan_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "submit": false,
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "PUT",
+    "path": "/api/v1/attempts/0a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c3d",
+    "principal": "runner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "plan_digest_mismatch",
+        "message": "The resolved plan does not match expected_plan_digest.",
+        "plan_digest": "sha256:b762368841efaf06189865fd55debd4bf8659b888b501d612c99903068d8a467"
+      }
+    },
+    "content_type": "application/json",
+    "status": 409
+  }
+}

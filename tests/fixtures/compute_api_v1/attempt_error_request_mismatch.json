@@ -1,0 +1,33 @@
+{
+  "case": "attempt_error_request_mismatch",
+  "request": {
+    "body": {
+      "expected_plan_digest": "sha256:b762368841efaf06189865fd55debd4bf8659b888b501d612c99903068d8a467",
+      "resources": {
+        "cpus": 48
+      },
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "submit": true,
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "PUT",
+    "path": "/api/v1/attempts/6f1d2c3b-4a59-4e68-8b7a-9c0d1e2f3a4b",
+    "principal": "runner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "attempt_request_mismatch",
+        "message": "This attempt ID is already bound to a different request."
+      }
+    },
+    "content_type": "application/json",
+    "status": 409
+  }
+}

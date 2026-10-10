@@ -1,0 +1,28 @@
+{
+  "case": "plan_error_insufficient_scope",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "submit_only"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "insufficient_scope",
+        "message": "This token does not have the 'plan' scope."
+      }
+    },
+    "content_type": "application/json",
+    "status": 403
+  }
+}

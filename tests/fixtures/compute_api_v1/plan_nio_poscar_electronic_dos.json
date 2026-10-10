@@ -1,0 +1,706 @@
+{
+  "case": "plan_nio_poscar_electronic_dos",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "NiO rocksalt\n1.0\n0.0 2.085 2.085\n2.085 0.0 2.085\n2.085 2.085 0.0\nNi O\n1 1\ndirect\n0.0 0.0 0.0\n0.5 0.5 0.5\n"
+      },
+      "workflow": {
+        "desired_output": "electronic_dos"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "planner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "automatic_treatments": {
+        "advisory_consideration_ids": [],
+        "applied_treatments": [
+          {
+            "application_state": "applied",
+            "consideration_id": "spin.composition_screen",
+            "display_name": "Spin Polarised",
+            "modifier": "spin_polarized",
+            "source": "backend.calculations.default_treatments",
+            "stage_applications": [
+              {
+                "stage_index": 1,
+                "stage_type": "relax",
+                "stage_type_label": "Geometry Optimisation",
+                "theory": "pbe",
+                "theory_label": "PBE"
+              },
+              {
+                "stage_index": 2,
+                "stage_type": "static",
+                "stage_type_label": "Static Energy",
+                "theory": "hse06",
+                "theory_label": "HSE06"
+              },
+              {
+                "stage_index": 3,
+                "stage_type": "dos",
+                "stage_type_label": "Density of States",
+                "theory": "hse06",
+                "theory_label": "HSE06"
+              }
+            ],
+            "stage_indices": [
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "application_state": "applied",
+            "consideration_id": "dftu.mp_oxide_fluoride",
+            "display_name": "DFT+U",
+            "modifier": "dft_u",
+            "source": "backend.calculations.default_treatments",
+            "stage_applications": [
+              {
+                "stage_index": 1,
+                "stage_type": "relax",
+                "stage_type_label": "Geometry Optimisation",
+                "theory": "pbe",
+                "theory_label": "PBE"
+              }
+            ],
+            "stage_indices": [
+              1
+            ]
+          }
+        ],
+        "base_workflow": {
+          "label": null,
+          "recipe": "electronic_dos",
+          "stages": [
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "relax",
+              "theory": "pbe"
+            },
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "static",
+              "theory": "hse06"
+            },
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "dos",
+              "theory": "hse06"
+            }
+          ]
+        },
+        "desired_output": "electronic_dos",
+        "dft_u": {
+          "consideration_id": "dftu.mp_oxide_fluoride",
+          "d_counts": [
+            {
+              "Ni": 8.0
+            }
+          ],
+          "deciding_anion": "O",
+          "decision": "apply",
+          "elements": [
+            "Ni",
+            "O"
+          ],
+          "gate": "d_electrons_present",
+          "gate_reason": "At least one charge-balanced oxidation-state assignment leaves a triggering element with d electrons.",
+          "generated_stages": [
+            {
+              "LDAU": true,
+              "LDAUJ": [
+                0,
+                0
+              ],
+              "LDAUL": [
+                2,
+                0
+              ],
+              "LDAUTYPE": 2,
+              "LDAUU": [
+                6.2,
+                0
+              ],
+              "LMAXMIX": 4,
+              "poscar_symbols": [
+                "Ni",
+                "O"
+              ],
+              "potcar_symbols": [
+                "Ni",
+                "O"
+              ],
+              "stage_index": 1,
+              "stage_type": "relax",
+              "theory": "pbe"
+            }
+          ],
+          "most_electronegative_element": "O",
+          "mp_anion_basis": [
+            "F",
+            "O"
+          ],
+          "mp_rule_triggered": true,
+          "oxidation_state_guesses": [
+            {
+              "Ni": 2.0,
+              "O": -2.0
+            }
+          ],
+          "parameter_source_record": {
+            "atomate2_table_matches_mprelaxset": true,
+            "generator_config": "atomate2.vasp.sets.base._BASE_VASP_SET",
+            "mprelaxset_yaml": "pymatgen/io/vasp/MPRelaxSet.yaml",
+            "mprelaxset_yaml_sha256": "c9b0a519588fb3709509a9f9964632692584905e2961a0fe2e5f657561913083",
+            "packages": {
+              "atomate2": "0.1.5",
+              "pymatgen": "2026.5.4",
+              "pymatgen-core": "2026.7.16"
+            },
+            "parameter_source": "pymatgen.io.vasp.sets.MPRelaxSet (MPRelaxSet.yaml INCAR LDAU*)"
+          },
+          "parameters": {
+            "LDAUTYPE": 2,
+            "deciding_anion": "O",
+            "parameter_source": "pymatgen.io.vasp.sets.MPRelaxSet (MPRelaxSet.yaml INCAR LDAU*)",
+            "policy_id": "bmd_compute.dft_u",
+            "policy_version": 1,
+            "species": {
+              "Ni": {
+                "J": 0,
+                "L": 2,
+                "U": 6.2
+              },
+              "O": {
+                "J": 0,
+                "L": 0,
+                "U": 0
+              }
+            }
+          },
+          "policy_id": "bmd_compute.dft_u",
+          "policy_version": 1,
+          "rule_id": "pymatgen.MPRelaxSet.most_electronegative_oxide_fluoride",
+          "triggering_elements": [
+            "Ni"
+          ]
+        },
+        "mode": "bmd_managed_desired_output",
+        "not_applicable_considerations": [],
+        "omitted_treatments": [],
+        "resolved_workflow": {
+          "label": null,
+          "recipe": "electronic_dos",
+          "stages": [
+            {
+              "label": null,
+              "modifiers": [
+                "dft_u",
+                "spin_polarized"
+              ],
+              "options": {
+                "dft_u": {
+                  "LDAUTYPE": 2,
+                  "deciding_anion": "O",
+                  "parameter_source": "pymatgen.io.vasp.sets.MPRelaxSet (MPRelaxSet.yaml INCAR LDAU*)",
+                  "policy_id": "bmd_compute.dft_u",
+                  "policy_version": 1,
+                  "species": {
+                    "Ni": {
+                      "J": 0,
+                      "L": 2,
+                      "U": 6.2
+                    },
+                    "O": {
+                      "J": 0,
+                      "L": 0,
+                      "U": 0
+                    }
+                  }
+                }
+              },
+              "stage_type": "relax",
+              "theory": "pbe"
+            },
+            {
+              "label": null,
+              "modifiers": [
+                "spin_polarized"
+              ],
+              "options": {},
+              "stage_type": "static",
+              "theory": "hse06"
+            },
+            {
+              "label": null,
+              "modifiers": [
+                "spin_polarized"
+              ],
+              "options": {},
+              "stage_type": "dos",
+              "theory": "hse06"
+            }
+          ]
+        },
+        "source": "backend.calculations.default_treatments"
+      },
+      "capability_schema_version": 1,
+      "method_considerations": {
+        "considerations": [
+          {
+            "applicable_stage_types": [
+              "band_structure",
+              "dos",
+              "relax",
+              "static"
+            ],
+            "automatic_application_state": "applied",
+            "automatic_stage_indices": [
+              1,
+              2,
+              3
+            ],
+            "id": "spin.composition_screen",
+            "method": "spin_polarisation",
+            "modifier": "spin_polarized",
+            "policy_source": {
+              "authority": "BMD Compute executable method-consideration policy",
+              "implementation": "backend.calculations.method_considerations",
+              "policy_id": "bmd_compute.method_considerations",
+              "policy_version": 6,
+              "rule_id": "spin.composition_screen"
+            },
+            "selection_state": "already_selected",
+            "status": "recommended_for_consideration",
+            "trigger_classes": [
+              "3d_spin_screen"
+            ],
+            "trigger_elements": [
+              "Ni"
+            ]
+          },
+          {
+            "applicable_stage_types": [
+              "band_structure",
+              "dos",
+              "relax",
+              "static"
+            ],
+            "automatic_application_state": "applied",
+            "automatic_stage_indices": [
+              1
+            ],
+            "id": "dftu.mp_oxide_fluoride",
+            "method": "dft_u",
+            "modifier": "dft_u",
+            "policy_source": {
+              "authority": "BMD Compute executable method-consideration policy",
+              "dft_u_policy_id": "bmd_compute.dft_u",
+              "dft_u_policy_version": 1,
+              "implementation": "backend.calculations.method_considerations",
+              "policy_id": "bmd_compute.method_considerations",
+              "policy_version": 6,
+              "rule_id": "dftu.mp_oxide_fluoride"
+            },
+            "selection_state": "already_selected",
+            "status": "recommended_for_consideration",
+            "trigger_classes": [
+              "mp_ggau_o"
+            ],
+            "trigger_elements": [
+              "Ni"
+            ]
+          }
+        ],
+        "policy_version": 6
+      },
+      "plan_digest": "sha256:ea8666573f5e3cacf3ee4d3a5649a0fb949ed62676de3c56d1755dcdb474e7ab",
+      "plan_digest_version": 1,
+      "policies": {
+        "automatic_dft_u": {
+          "id": "bmd_compute.dft_u",
+          "version": 1
+        },
+        "custodian": {
+          "id": "bmd_compute.vasp",
+          "version": 1
+        },
+        "method_considerations": {
+          "version": 6
+        },
+        "new_calculation_admission": {
+          "id": "bmd_compute.new_calculation_admission",
+          "version": 1
+        },
+        "plan_digest": {
+          "id": "bmd_compute.plan_digest",
+          "version": 1
+        },
+        "runtime_parity": {
+          "id": "bmd_compute.runtime_parity",
+          "version": 1
+        }
+      },
+      "request": {
+        "desired_output": "electronic_dos",
+        "structure_format": "poscar",
+        "workflow_mode": "desired_output"
+      },
+      "resources": {
+        "account": "power-leeburton-users_v2",
+        "cpus": 24,
+        "memory_gb": 128,
+        "nodes": 1,
+        "partition": "leeburton-pool",
+        "walltime": "72:00:00"
+      },
+      "schema": "bmd_compute.api.plan",
+      "schema_version": 1,
+      "scientific_inputs": {
+        "potcar_functional": "PBE_64",
+        "stages": [
+          {
+            "incar": {
+              "settings": {
+                "ADDGRID": true,
+                "ALGO": "Fast",
+                "EDIFF": 1e-06,
+                "EDIFFG": -0.01,
+                "ENCUT": 580.0,
+                "IBRION": 2,
+                "ISIF": 3,
+                "ISMEAR": 0,
+                "ISPIN": 2,
+                "LASPH": true,
+                "LCHARG": false,
+                "LDAU": true,
+                "LDAUJ": [
+                  0,
+                  0
+                ],
+                "LDAUL": [
+                  2,
+                  0
+                ],
+                "LDAUPRINT": 1,
+                "LDAUTYPE": 2,
+                "LDAUU": [
+                  6.2,
+                  0
+                ],
+                "LMAXMIX": 4,
+                "LREAL": false,
+                "LWAVE": false,
+                "MAGMOM": [
+                  5,
+                  0.6
+                ],
+                "NCORE": 8,
+                "NELM": 200,
+                "NSW": 99,
+                "PREC": "Accurate",
+                "SIGMA": 0.2
+              },
+              "sha256": "c95d27009cd5b26025bdf9969810a9e3c4413aa77b1128ad8c50ee852535a9f4"
+            },
+            "index": 1,
+            "kpoints": {
+              "kpts": [
+                [
+                  9,
+                  9,
+                  9
+                ]
+              ],
+              "kpts_shift": [
+                0,
+                0,
+                0
+              ],
+              "num_kpts": 0,
+              "sha256": "03863173bab19bb0c70554bd7cc6d79330eebe19721b5f005c91a3aa46c377e6",
+              "style": "Gamma"
+            },
+            "modifiers": [
+              "dft_u",
+              "spin_polarized"
+            ],
+            "options": {
+              "dft_u": {
+                "LDAUTYPE": 2,
+                "deciding_anion": "O",
+                "parameter_source": "pymatgen.io.vasp.sets.MPRelaxSet (MPRelaxSet.yaml INCAR LDAU*)",
+                "policy_id": "bmd_compute.dft_u",
+                "policy_version": 1,
+                "species": {
+                  "Ni": {
+                    "J": 0,
+                    "L": 2,
+                    "U": 6.2
+                  },
+                  "O": {
+                    "J": 0,
+                    "L": 0,
+                    "U": 0
+                  }
+                }
+              }
+            },
+            "poscar": {
+              "num_sites": 2,
+              "reduced_formula": "NiO",
+              "sha256": "b7545445c476c371653e9305659959238f4e14917d6b0264a76bad8cc8ec3a77"
+            },
+            "potcar_symbols": [
+              "Ni",
+              "O"
+            ],
+            "stage_type": "relax",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          },
+          {
+            "incar": {
+              "settings": {
+                "ADDGRID": true,
+                "AEXX": 0.25,
+                "ALGO": "Damped",
+                "EDIFF": 1e-06,
+                "ENCUT": 620.0,
+                "GGA": "Pe",
+                "HFSCREEN": 0.2,
+                "ISMEAR": 0,
+                "ISPIN": 2,
+                "LAECHG": true,
+                "LASPH": true,
+                "LCHARG": true,
+                "LELF": true,
+                "LHFCALC": true,
+                "LORBIT": 11,
+                "LREAL": false,
+                "LVTOT": true,
+                "LWAVE": false,
+                "MAGMOM": [
+                  5,
+                  0.6
+                ],
+                "NCORE": 8,
+                "NEDOS": 4001,
+                "NELM": 200,
+                "NSW": 0,
+                "PREC": "Accurate",
+                "PRECFOCK": "Accurate",
+                "SIGMA": 0.05,
+                "TIME": 0.4
+              },
+              "sha256": "a5536b6cd3d4c49cbdc26f703bb2dac5a5d9ecd49591850d34723ecf225dc3b3"
+            },
+            "index": 2,
+            "kpoints": {
+              "kpts": [
+                [
+                  9,
+                  9,
+                  9
+                ]
+              ],
+              "kpts_shift": [
+                0,
+                0,
+                0
+              ],
+              "num_kpts": 0,
+              "sha256": "03863173bab19bb0c70554bd7cc6d79330eebe19721b5f005c91a3aa46c377e6",
+              "style": "Gamma"
+            },
+            "modifiers": [
+              "spin_polarized"
+            ],
+            "options": {},
+            "poscar": {
+              "num_sites": 2,
+              "reduced_formula": "NiO",
+              "sha256": "b7545445c476c371653e9305659959238f4e14917d6b0264a76bad8cc8ec3a77"
+            },
+            "potcar_symbols": [
+              "Ni",
+              "O"
+            ],
+            "stage_type": "static",
+            "theory": "hse06",
+            "vasp_executable": "vasp_std"
+          },
+          {
+            "incar": {
+              "settings": {
+                "ADDGRID": true,
+                "AEXX": 0.25,
+                "ALGO": "Normal",
+                "EDIFF": 1e-06,
+                "ENCUT": 620.0,
+                "GGA": "Pe",
+                "HFSCREEN": 0.2,
+                "ISMEAR": -5,
+                "ISPIN": 2,
+                "LAECHG": true,
+                "LASPH": true,
+                "LCHARG": false,
+                "LELF": false,
+                "LHFCALC": true,
+                "LORBIT": 11,
+                "LREAL": false,
+                "LVTOT": true,
+                "LWAVE": false,
+                "MAGMOM": [
+                  5,
+                  0.6
+                ],
+                "NCORE": 8,
+                "NEDOS": 4001,
+                "NELM": 200,
+                "NELMIN": 5,
+                "NSW": 0,
+                "PREC": "Accurate",
+                "PRECFOCK": "Fast",
+                "SIGMA": 0.2,
+                "TIME": 0.4
+              },
+              "sha256": "1e90bd0cf78df5e6e63716379d864eb69c342ca26677084ecf8b5e1cfd2adc1d"
+            },
+            "index": 3,
+            "kpoints": {
+              "kpts": [
+                [
+                  11,
+                  11,
+                  11
+                ]
+              ],
+              "kpts_shift": [
+                0,
+                0,
+                0
+              ],
+              "num_kpts": 0,
+              "sha256": "389e8f98c4b8c3a36b870ef6f2bcdae4f38706d018818aff295a54313a45d6c5",
+              "style": "Gamma"
+            },
+            "modifiers": [
+              "spin_polarized"
+            ],
+            "options": {},
+            "poscar": {
+              "num_sites": 2,
+              "reduced_formula": "NiO",
+              "sha256": "b7545445c476c371653e9305659959238f4e14917d6b0264a76bad8cc8ec3a77"
+            },
+            "potcar_symbols": [
+              "Ni",
+              "O"
+            ],
+            "stage_type": "dos",
+            "theory": "hse06",
+            "vasp_executable": "vasp_std"
+          }
+        ]
+      },
+      "software": {
+        "modules": [
+          "intel/rocky8-oneAPI-2023",
+          "vasp/rocky8-intel-6.4.1"
+        ],
+        "runtime_parity_packages": {
+          "atomate2": "0.1.5",
+          "custodian": "2025.12.14",
+          "emmet-core": "0.87.1",
+          "jobflow": "0.1.19",
+          "pymatgen": "2026.5.4",
+          "pymatgen-core": "2026.7.16",
+          "spglib": "2.7.0"
+        }
+      },
+      "structure": {
+        "canonical_sha256": "51d99259e2d67dff5cc8d0c73f0e71d9fbfd424684196d8fa99cab014455b9ef",
+        "crystal_system": "cubic",
+        "formula": "Ni1 O1",
+        "natoms": 2,
+        "reduced_formula": "NiO",
+        "space_group_number": 225,
+        "space_group_symbol": "Fm-3m",
+        "volume": 18.128
+      },
+      "workflow": {
+        "recipe": "electronic_dos",
+        "stage_count": 3,
+        "stages": [
+          {
+            "index": 1,
+            "modifiers": [
+              "dft_u",
+              "spin_polarized"
+            ],
+            "options": {
+              "dft_u": {
+                "LDAUTYPE": 2,
+                "deciding_anion": "O",
+                "parameter_source": "pymatgen.io.vasp.sets.MPRelaxSet (MPRelaxSet.yaml INCAR LDAU*)",
+                "policy_id": "bmd_compute.dft_u",
+                "policy_version": 1,
+                "species": {
+                  "Ni": {
+                    "J": 0,
+                    "L": 2,
+                    "U": 6.2
+                  },
+                  "O": {
+                    "J": 0,
+                    "L": 0,
+                    "U": 0
+                  }
+                }
+              }
+            },
+            "stage_type": "relax",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          },
+          {
+            "index": 2,
+            "modifiers": [
+              "spin_polarized"
+            ],
+            "options": {},
+            "stage_type": "static",
+            "theory": "hse06",
+            "vasp_executable": "vasp_std"
+          },
+          {
+            "index": 3,
+            "modifiers": [
+              "spin_polarized"
+            ],
+            "options": {},
+            "stage_type": "dos",
+            "theory": "hse06",
+            "vasp_executable": "vasp_std"
+          }
+        ]
+      }
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}
