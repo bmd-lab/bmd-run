@@ -43,7 +43,7 @@ for BMD Compute's machine API v1 (bmd-compute `e3fbb3b`, `docs/machine_api.md`):
 | `bmd-run api submit` | Submit the same recorded attempt (`submit=true`) | `PUT /api/v1/attempts/{uuid}` | `submit` |
 | `bmd-run api status` | The attempt's authoritative state | `GET /api/v1/attempts/{uuid}` | `read` |
 
-Milestone R2 adds the recommended one-command form, `bmd-run STRUCTURE [options]`,
+Milestone R2 adds the recommended one-command form, `bmd-run [STRUCTURE] [options]`,
 which performs `api prepare` followed by `api submit` for the same new attempt. It
 uses no other routes or scopes (`plan`, `prepare`, `submit`).
 
@@ -147,7 +147,7 @@ Consequences:
 - a failed plan records nothing; once recorded, an attempt is never replaced, and a
   failure or uncertainty in Prepare stops the run before any submission;
 - an uncertain submission keeps R1's classification (exit 15) and is never retried;
-  running `bmd-run STRUCTURE` again deliberately starts a new attempt;
+  running `bmd-run` again deliberately starts a new attempt;
 - the default workflow (Compute's `energy_only` Desired Output) and the shortcut
   aliases are the only client-side choices, and they are Compute identifiers.
 
@@ -155,6 +155,22 @@ Dispatch is by the first positional argument: the command names `identity`,
 `options`, `analyze`, `plan` and `api`, and reserved words such as `prepare`,
 `submit`, `status`, `run` and `batch`, select the existing commands (or their usage
 errors); anything else is a structure file.
+
+### POSCAR autodetection and shortcuts (R2.1)
+
+R2.1 changes only argument handling in `cli.py`; `machine.run`, the transports and
+the attempt store are unchanged. With no positional argument, `bmd-run` uses the
+file named exactly `POSCAR` in the current directory, read as POSCAR, and checks it
+exists before anything is sent; it never searches elsewhere and never writes next to
+the file. An explicit structure file always wins, and `--format` is accepted only
+with one. `--relax`, `--dos` and `--bands` set the Desired Output to Compute's
+`relaxed_structure`, `electronic_dos` and `electronic_band_structure`; `--custom FILE`
+is `--custom-workflow FILE`. All workflow options are one argparse mutually
+exclusive group, so any combination is a usage error. Without a positional
+argument, `--help`, `-h`, `--version` and the read/build-only `--compute-url` keep
+their previous meaning (help, version, or the read/build usage error), so they never
+start a calculation; help together with a shortcut or `--custom` shows the
+one-command help. There is no duplicate detection: each invocation is a new attempt.
 
 ## Compute And POWER
 
