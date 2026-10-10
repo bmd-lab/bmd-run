@@ -1,0 +1,29 @@
+{
+  "case": "plan_error_structure_invalid",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "not a structure\n"
+      },
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "planner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "structure_invalid",
+        "message": "Could not determine the chemical elements from the POSCAR.",
+        "suggestion": "Please ensure the POSCAR contains a valid element-symbol line (e.g. Mg O) immediately before the atom counts."
+      }
+    },
+    "content_type": "application/json",
+    "status": 422
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "case": "plan_error_unauthenticated",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "workflow": {
+        "desired_output": "energy_only"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": null
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "unauthenticated",
+        "message": "A valid BMD Compute API bearer token is required."
+      }
+    },
+    "content_type": "application/json",
+    "status": 401
+  }
+}

@@ -83,6 +83,14 @@ class InstalledWheelSmoke(unittest.TestCase):
             self.assertEqual(roots, {"bmd_run", dist_info})
             self.assertIn("bmd_run/__init__.py", names)
             self.assertIn("bmd_run/schemas/output-v3.schema.json", names)
+            self.assertIn("bmd_run/schemas/machine-output-v1.schema.json", names)
+            self.assertEqual(
+                sorted(name for name in names if name.startswith("bmd_run/")),
+                sorted(
+                    ["bmd_run/schemas/output-v3.schema.json", "bmd_run/schemas/machine-output-v1.schema.json"]
+                    + [f"bmd_run/{p.name}" for p in (ROOT / "src" / "bmd_run").glob("*.py")]
+                ),
+            )
             entry_points_path = f"{dist_info}/entry_points.txt"
             self.assertIn(entry_points_path, names)
             with zipfile.ZipFile(wheel) as archive:
@@ -138,6 +146,9 @@ class InstalledWheelSmoke(unittest.TestCase):
             help_result = _run([bmd_run, "--help"], cwd=tmp, env=env)
             self.assertIn("bmd-run", help_result.stdout)
             self.assertIn("identity", help_result.stdout)
+            api_help = _run([bmd_run, "api", "--help"], cwd=tmp, env=env)
+            for command in ("plan", "prepare", "submit", "status"):
+                self.assertIn(command, api_help.stdout)
 
             version_result = _run([bmd_run, "--version"], cwd=tmp, env=env)
             self.assertRegex(version_result.stdout, r"^bmd-run 0\.1\.0\s*$")

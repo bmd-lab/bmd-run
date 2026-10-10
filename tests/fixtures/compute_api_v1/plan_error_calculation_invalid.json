@@ -1,0 +1,41 @@
+{
+  "case": "plan_error_calculation_invalid",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "workflow": {
+        "custom": {
+          "stages": [
+            {
+              "modifiers": [
+                "soc"
+              ],
+              "options": {},
+              "stage_type": "static",
+              "theory": "hse06"
+            }
+          ]
+        }
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "planner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "calculation_invalid",
+        "diagnostic_code": "hse06_soc_not_supported_for_new_calculations",
+        "message": "HSE06 + SOC is not currently supported for automatic execution. This combination can be exceptionally computationally expensive and may require system-specific convergence and resource settings. HSE06 and PBE+SOC remain available separately.",
+        "suggestion": "Remove SOC from HSE06 stage 1, or use PBE+SOC Static Energy for a spin–orbit-coupled calculation."
+      }
+    },
+    "content_type": "application/json",
+    "status": 422
+  }
+}

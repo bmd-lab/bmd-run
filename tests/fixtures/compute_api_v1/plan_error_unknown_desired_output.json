@@ -1,0 +1,30 @@
+{
+  "case": "plan_error_unknown_desired_output",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "workflow": {
+        "desired_output": "nonsense_output"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "planner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "error": {
+        "code": "calculation_invalid",
+        "diagnostic_code": "unknown_desired_output",
+        "message": "Unknown Desired Output.",
+        "suggestion": "Use one of the Desired Output identifiers offered by BMD Compute."
+      }
+    },
+    "content_type": "application/json",
+    "status": 422
+  }
+}
