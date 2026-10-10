@@ -295,6 +295,7 @@ class ImportsAndCapabilities(unittest.TestCase):
                 "probes.py",
                 "schemas/machine-output-v1.schema.json",
                 "schemas/output-v3.schema.json",
+                "schemas/run-output-v1.schema.json",
                 "transport.py",
                 "v1_html.py",
                 "v1_inputs.py",
