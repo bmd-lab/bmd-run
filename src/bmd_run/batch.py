@@ -13,11 +13,13 @@ retry and no scientific choice. What it adds is a campaign record per cell
    (plan, record the attempt, Prepare) for a cell whose attempt was never recorded,
    ``prepare_resume`` for an attempt not yet prepared, ``submit`` for a prepared one;
    a submitted attempt is left alone and an uncertain submission is never repeated;
-4. at most ``max_new`` attempts are started per invocation (default 1); attempts
-   recorded earlier are always continued, so running the batch again resumes it;
-5. the batch stops at the first error that is not specific to one cell (quotas,
-   uncertainty, connectivity, credentials, local state); BMD Compute's quotas
-   apply unchanged.
+4. every remaining cell is started, unless ``max_new`` (optional, for testing) bounds
+   the new attempts of one invocation; attempts recorded earlier are always
+   continued, so running the batch again resumes it;
+5. errors specific to one cell (a rejected request, a definite remote failure, an
+   uncertain submission) are recorded on the cell and the batch continues; the
+   batch stops at the first campaign-wide error (connectivity, credentials, local
+   state, or anything else not specific to one cell).
 
 ``batch status`` only reads: it asks BMD Compute for each recorded attempt's state
 (``GET``), never prepares or submits, and reports one of ``pending``,
@@ -47,15 +49,14 @@ from .errors import (
     InvalidRequest,
     PlanDigestMismatch,
     RemoteOperationFailed,
+    SubmissionUncertain,
     UsageError,
 )
 from .machine_output import REFERENCE_COMMIT, error_dict, render_error
 
 MANIFEST_VERSION = 1
-MAX_MANIFEST_BYTES = 1024 * 1024
-MAX_CALCULATIONS = 200
-DEFAULT_MAX_NEW = 1
-MAX_NEW_LIMIT = 20
+MAX_MANIFEST_BYTES = 64 * 1024 * 1024
+DEFAULT_MAX_NEW = None  # no bound: every remaining cell
 
 BATCH_SCHEMA = "bmd_run.batch_output"
 BATCH_SCHEMA_VERSION = 1
@@ -71,8 +72,10 @@ _CALCULATION_KEYS = frozenset({
     "cell", "structure", "format", "desired_output", "custom_workflow", "cpus", "memory_gb", "walltime", "queue",
 })
 # Errors that concern one cell's request or attempt: the batch records them and continues.
-# Every other error (quota, uncertainty, connectivity, credentials, local state) stops it.
-CELL_ERRORS = (InvalidRequest, PlanDigestMismatch, AttemptConflict, RemoteOperationFailed, AttemptNotFound)
+# An uncertain submission is one cell's: it is recorded and never retried, and independent cells
+# continue. Every other error (connectivity, credentials, local state, ...) stops the batch.
+CELL_ERRORS = (InvalidRequest, PlanDigestMismatch, AttemptConflict, RemoteOperationFailed, AttemptNotFound,
+               SubmissionUncertain)
 # A cell whose last error is one of these will not progress without a change by the user.
 _PERMANENT_ERROR_KINDS = ("invalid_request", "plan_digest_mismatch", "attempt_conflict")
 _UNCERTAIN_STATES = ("submit_unconfirmed", "submission_uncertain")
@@ -109,7 +112,7 @@ def load_manifest(path_text: str, build_request: Callable[[argparse.Namespace], 
     if not path.is_file():
         raise UsageError(f"Manifest file not found: {path_text}")
     if path.stat().st_size > MAX_MANIFEST_BYTES:
-        raise _manifest_error("The manifest file is larger than 1 MiB.")
+        raise _manifest_error("The manifest file is larger than 64 MiB.")
     data = path.read_bytes()
     try:
         document = json.loads(data.decode("utf-8"))
@@ -126,8 +129,8 @@ def load_manifest(path_text: str, build_request: Callable[[argparse.Namespace], 
             "starting with a letter or digit."
         )
     entries = document["calculations"]
-    if not isinstance(entries, list) or not 1 <= len(entries) <= MAX_CALCULATIONS:
-        raise _manifest_error(f'"calculations" must be a list of 1 to {MAX_CALCULATIONS} calculations.')
+    if not isinstance(entries, list) or not entries:
+        raise _manifest_error('"calculations" must be a non-empty list of calculations.')
     base = path.resolve().parent
     seen: Dict[str, str] = {}
     calculations = []
@@ -320,17 +323,20 @@ def _set_error(store: CampaignStore, record: Optional[dict], stage: str, error: 
 
 
 class _Run:
-    def __init__(self, api: ApiTransport, store: CampaignStore, manifest: Manifest, max_new: int,
+    def __init__(self, api: ApiTransport, store: CampaignStore, manifest: Manifest, max_new: Optional[int],
                  notify: Callable[[str, Any], None]) -> None:
         self.api, self.store, self.manifest, self.max_new, self.notify = api, store, manifest, max_new, notify
         self.new_attempts = 0
+
+    def limit_reached(self) -> bool:
+        return self.max_new is not None and self.new_attempts >= self.max_new
 
     def advance(self, calc: Calculation, record: Optional[dict]) -> Tuple[str, Optional[dict]]:
         """Move one cell forward with the R1 operations. Returns (action, record)."""
 
         store, campaign = self.store, self.manifest.campaign
         if record is None:
-            if self.new_attempts >= self.max_new:
+            if self.limit_reached():
                 return "not_started", None
             record = new_cell(campaign=campaign, cell=calc.cell, attempt_id=machine.generate_attempt_id(),
                               api_origin=self.api.base_url, request_sha=calc.request_sha, structure_source=calc.source)
@@ -342,7 +348,7 @@ class _Run:
         try:
             if attempt is None:
                 # Never recorded, so never sent to BMD Compute: start it (with the reserved UUID).
-                if self.new_attempts >= self.max_new:
+                if self.limit_reached():
                     return "not_started", record
                 self.new_attempts += 1
                 expected = record["plan"]["plan_digest"] if record["plan"] is not None else None
@@ -378,7 +384,7 @@ class _Run:
         return "submitted", record
 
 
-def run_batch(api: ApiTransport, store: CampaignStore, manifest: Manifest, *, max_new: int = DEFAULT_MAX_NEW,
+def run_batch(api: ApiTransport, store: CampaignStore, manifest: Manifest, *, max_new: Optional[int] = DEFAULT_MAX_NEW,
               notify: Optional[Callable[[str, Any], None]] = None) -> dict:
     """Advance every cell in manifest order. Returns rows, counts and the error that stopped it (if any)."""
 
@@ -511,10 +517,12 @@ def render_cell_progress(row: dict) -> str:
     return text
 
 
-def render_run_header(manifest: Manifest, max_new: int) -> str:
+def render_run_header(manifest: Manifest, max_new: Optional[int]) -> str:
     count = len(manifest.calculations)
-    return (f"BMD Run batch: campaign {manifest.campaign}, {count} calculation{'s' if count != 1 else ''}, "
-            f"at most {max_new} new attempt{'s' if max_new != 1 else ''} this run")
+    text = f"BMD Run batch: campaign {manifest.campaign}, {count} calculation{'s' if count != 1 else ''}"
+    if max_new is not None:
+        text += f", at most {max_new} new attempt{'s' if max_new != 1 else ''} this run"
+    return text
 
 
 def render_summary(rows: List[dict], new_attempts: Optional[int]) -> str:

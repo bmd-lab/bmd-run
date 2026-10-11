@@ -151,7 +151,7 @@ class Lock(BatchBase):
 
     def test_released_after_completion_errors_and_interrupts(self):
         manifest = self.manifest([SI, NIO])
-        self.assertEqual(self.batch(manifest)[0], 0)
+        self.assertEqual(self.batch(manifest, "--max-new", "1")[0], 0)
         self.assert_unlocked()
         for fault in (None, None, "active_job_cap_exceeded"):  # NIO: plan, prepare, refused submit
             self.compute.add_fault(fault)

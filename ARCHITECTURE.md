@@ -188,7 +188,7 @@ observed attempt and scheduler state, under a closed schema checked on every rea
 `run_batch` holds an exclusive, non-blocking `flock` on
 `<state dir>/campaigns/<campaign>.lock` (`CampaignStore.campaign_lock`) from before it
 reads any cell until the loop ends, so only one invocation advances a campaign and
-`--max-new` holds across concurrent invocations; a second one fails before reading or
+an optional `--max-new` holds across concurrent invocations; a second one fails before reading or
 sending anything. The lock is keyed by the campaign's state, not the manifest path,
 and the kernel releases it when the process exits. `batch status` takes no lock.
 
@@ -196,10 +196,11 @@ Advancing a cell uses only `prepare_new` (with the reserved UUID and, if the cel
 already holds a plan, that plan's digest as `expected_plan_digest`),
 `prepare_resume` and `submit`. A submitted attempt is never touched, and an attempt
 in `submit_unconfirmed` or `submission_uncertain` is never submitted again by the
-batch. At most `--max-new` (default 1, at most 20) new attempts are started per
-run. Errors that concern one cell's request or attempt are recorded on the cell and
-the loop continues; every other error (quotas, uncertainty, connectivity,
-credentials, local state) stops the loop, leaving later cells untouched. `batch
+batch. Every remaining cell is started unless the optional `--max-new N` (for
+testing) bounds the new attempts of a run; there is no application-level count
+limit. Errors that concern one cell's request or attempt, including an uncertain
+submission, are recorded on the cell and the loop continues; every other error
+(connectivity, credentials, local state) stops the loop, leaving later cells untouched. `batch
 status` uses only `machine.status` (`GET`). Memory is always reported as the
 requested allocation (`requested_memory_gb`), never as measured usage.
 

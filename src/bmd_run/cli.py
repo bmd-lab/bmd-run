@@ -653,8 +653,9 @@ def build_batch_parser() -> argparse.ArgumentParser:
             "Run a campaign of calculations listed in a JSON manifest through BMD Compute, one attempt per "
             "cell, using the same plan, record, prepare and submit operations as 'bmd-run STRUCTURE'. Each "
             "cell is recorded locally before anything is sent; running the batch again continues it and "
-            "never creates a second attempt for a recorded cell. At most --max-new new attempts are started "
-            f"per run (default {batch.DEFAULT_MAX_NEW}); BMD Compute's job and submission quotas apply. "
+            "never creates a second attempt for a recorded cell. Every calculation is submitted unless "
+            "--max-new bounds the new attempts of this run (for testing). An uncertain submission is "
+            "recorded, never retried, and the batch continues with the other cells. "
             "'batch status' only reads: it reports each cell as pending, submitted, completed, failed or "
             "uncertain, and never prepares or submits."
         ),
@@ -662,7 +663,7 @@ def build_batch_parser() -> argparse.ArgumentParser:
     parser.add_argument("words", nargs="+", metavar="[status] MANIFEST",
                         help="The manifest file; 'status MANIFEST' reports instead of running.")
     parser.add_argument("--max-new", default=None,
-                        help=f"New attempts to start in this run, 1-{batch.MAX_NEW_LIMIT} (default {batch.DEFAULT_MAX_NEW}).")
+                        help="Start at most N new attempts in this run (default: all remaining cells).")
     parser.add_argument("--local", action="store_true",
                         help="status only: report the local records without contacting BMD Compute.")
     parser.add_argument("--api-url", default=None, help=f"Machine-API origin (default ${API_URL_ENV} or {DEFAULT_API_URL}).")
@@ -699,10 +700,12 @@ def _main_batch(argv, api_transport_factory, environ, stdout, stderr) -> int:
         if command == "batch" and args.local:
             raise UsageError("--local applies to 'batch status' only.")
         if command == "batch":
-            max_new = batch.DEFAULT_MAX_NEW if args.max_new is None else args.max_new
-            if not re.match(r"^[0-9]{1,3}$", str(max_new)) or not 1 <= int(max_new) <= batch.MAX_NEW_LIMIT:
-                raise UsageError(f"--max-new must be an integer from 1 to {batch.MAX_NEW_LIMIT}.")
-            options = {"max_new": int(max_new), "refresh": None}
+            max_new = batch.DEFAULT_MAX_NEW
+            if args.max_new is not None:
+                if not re.match(r"^[0-9]{1,9}$", args.max_new) or int(args.max_new) < 1:
+                    raise UsageError("--max-new must be a positive integer.")
+                max_new = int(args.max_new)
+            options = {"max_new": max_new, "refresh": None}
         else:
             options = {"max_new": None, "refresh": not args.local}
         manifest = batch.load_manifest(manifest_path, _api_request)  # every request is built before anything is sent
