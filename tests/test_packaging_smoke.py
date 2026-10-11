@@ -88,7 +88,7 @@ class InstalledWheelSmoke(unittest.TestCase):
                 sorted(name for name in names if name.startswith("bmd_run/")),
                 sorted(
                     ["bmd_run/schemas/output-v3.schema.json", "bmd_run/schemas/machine-output-v1.schema.json",
-                     "bmd_run/schemas/run-output-v1.schema.json"]
+                     "bmd_run/schemas/run-output-v1.schema.json", "bmd_run/schemas/batch-output-v1.schema.json"]
                     + [f"bmd_run/{p.name}" for p in (ROOT / "src" / "bmd_run").glob("*.py")]
                 ),
             )
@@ -150,6 +150,8 @@ class InstalledWheelSmoke(unittest.TestCase):
             api_help = _run([bmd_run, "api", "--help"], cwd=tmp, env=env)
             for command in ("plan", "prepare", "submit", "status"):
                 self.assertIn(command, api_help.stdout)
+            batch_help = _run([bmd_run, "batch", "--help"], cwd=tmp, env=env)
+            self.assertIn("bmd-run batch status MANIFEST", batch_help.stdout)
 
             version_result = _run([bmd_run, "--version"], cwd=tmp, env=env)
             self.assertRegex(version_result.stdout, r"^bmd-run 0\.1\.0\s*$")

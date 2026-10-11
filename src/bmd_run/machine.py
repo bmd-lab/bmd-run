@@ -865,9 +865,15 @@ def _check_origin(record: dict, api: ApiTransport) -> None:
         )
 
 
+def generate_attempt_id() -> str:
+    """A new random attempt UUID (the only place attempt IDs are generated)."""
+
+    return str(uuid.uuid4())
+
+
 def prepare_new(api: ApiTransport, store: AttemptStore, request: dict, structure_source: dict, *,
                 expected_plan_digest: Optional[str] = None,
-                new_attempt_id: Callable[[], str] = lambda: str(uuid.uuid4()),
+                new_attempt_id: Callable[[], str] = generate_attempt_id,
                 on_planned: Optional[Callable[[dict], None]] = None,
                 on_persisted: Optional[Callable[[str, str], None]] = None) -> dict:
     """Plan, bind, persist, then prepare (``submit=false``).

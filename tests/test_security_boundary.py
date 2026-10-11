@@ -33,6 +33,7 @@ ALLOWED_MODULES = {
     "dataclasses",
     "datetime",
     "enum",
+    "fcntl",
     "hashlib",
     "html.parser",
     "http.client",
@@ -52,6 +53,9 @@ ALLOWED_MODULES = {
 # Modules that grant network access may only be imported by the two transports.
 NETWORK_MODULES = {"http.client", "ssl"}
 NETWORK_MODULE_OWNERS = {"transport.py", "api_transport.py"}
+# File locking (the batch campaign lock) is confined to the attempt store.
+LOCKING_MODULES = {"fcntl"}
+LOCKING_MODULE_OWNERS = {"attempt_store.py"}
 
 READ_BUILD_MODULES = {
     "bounded.py", "endpoints.py", "incar_tags.py", "operations.py", "output.py", "probes.py",
@@ -59,7 +63,7 @@ READ_BUILD_MODULES = {
 }
 MACHINE_MODULES = {
     "api_endpoints.py", "api_transport.py", "api_vocabulary.py", "attempt_store.py",
-    "credentials.py", "machine.py", "machine_output.py",
+    "batch.py", "credentials.py", "machine.py", "machine_output.py",
 }
 
 FORBIDDEN_BUILTINS = {"eval", "exec", "compile", "__import__", "open", "breakpoint"}
@@ -106,7 +110,7 @@ FORBIDDEN_TEXT = [
     "git ",
 ]
 # Text that only the machine-API modules that carry attempt state may contain.
-FORBIDDEN_TEXT_EXEMPTIONS = {"job_id": {"machine.py", "machine_output.py", "attempt_store.py"}}
+FORBIDDEN_TEXT_EXEMPTIONS = {"job_id": {"machine.py", "machine_output.py", "attempt_store.py", "batch.py"}}
 
 EXPECTED_ENDPOINTS = (
     ("openapi", "GET", "/openapi.json"),
@@ -195,7 +199,7 @@ class ClosedMachineApiTable(unittest.TestCase):
                     self.assertNotIn(f"from .{module}", text, f"{path.name} uses {module}")
 
     def test_the_attempt_store_never_sees_credentials(self):
-        for name in ("attempt_store.py", "machine.py", "machine_output.py"):
+        for name in ("attempt_store.py", "batch.py", "machine.py", "machine_output.py"):
             text = (PACKAGE / name).read_text(encoding="utf-8")
             self.assertNotIn("from .credentials", text, name)
             self.assertNotIn("ApiToken", text, name)
@@ -235,6 +239,13 @@ class ImportsAndCapabilities(unittest.TestCase):
             used = set(_imported_modules(tree)) & NETWORK_MODULES
             if path.name not in NETWORK_MODULE_OWNERS:
                 self.assertFalse(used, f"{path.name} imports network module(s) {used}")
+
+    def test_file_locking_is_confined_to_the_attempt_store(self):
+        for path in _sources():
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            used = set(_imported_modules(tree)) & LOCKING_MODULES
+            if path.name not in LOCKING_MODULE_OWNERS:
+                self.assertFalse(used, f"{path.name} imports {used}")
 
     def test_no_dynamic_execution_process_or_file_writing_calls(self):
         for path in _sources():
@@ -282,6 +293,7 @@ class ImportsAndCapabilities(unittest.TestCase):
                 "api_transport.py",
                 "api_vocabulary.py",
                 "attempt_store.py",
+                "batch.py",
                 "bounded.py",
                 "cli.py",
                 "credentials.py",
@@ -293,6 +305,7 @@ class ImportsAndCapabilities(unittest.TestCase):
                 "operations.py",
                 "output.py",
                 "probes.py",
+                "schemas/batch-output-v1.schema.json",
                 "schemas/machine-output-v1.schema.json",
                 "schemas/output-v3.schema.json",
                 "schemas/run-output-v1.schema.json",

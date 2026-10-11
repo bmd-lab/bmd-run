@@ -9,6 +9,8 @@
 * ``bmd-run api {plan,prepare,submit,status}``: the separate, authenticated
   machine-API capability (BMD Compute machine API v1), reached through the
   user's existing SSH tunnel. See ``machine.py``.
+* ``bmd-run batch [status] MANIFEST``: a campaign of single calculations from a JSON
+  manifest, advanced with the same R1 operations. See ``batch.py`` and ``_main_batch``.
 
 Validation here is limited to the shape of CLI arguments and requests. Whether
 a Desired Output, structure or resource value is acceptable is decided by
@@ -26,10 +28,10 @@ import sys
 from pathlib import Path
 from typing import Callable, List, Mapping, Optional
 
-from . import __version__, machine, machine_output, operations, output
+from . import __version__, batch, machine, machine_output, operations, output
 from .api_transport import API_URL_ENV, DEFAULT_API_URL, ApiTransport
 from .api_transport import DEFAULT_TIMEOUT_S as API_DEFAULT_TIMEOUT_S
-from .attempt_store import AttemptStore, default_state_dir
+from .attempt_store import AttemptStore, CampaignStore, default_state_dir
 from .credentials import load_token
 from .errors import (
     EXIT_FINGERPRINT_MISMATCH,
@@ -61,7 +63,7 @@ DESIRED_OUTPUT_SHORTCUTS = {
 AUTODETECTED_STRUCTURE = "POSCAR"  # used, as POSCAR, when no structure file is given
 _OPTIONS_WITH_VALUES = frozenset({
     "--compute-url", "--timeout", "--format", "--desired-output", "--custom-workflow", "--custom", "--cpus",
-    "--memory-gb", "--walltime", "--queue", "--api-url", "--token-file", "--state-dir",
+    "--memory-gb", "--walltime", "--queue", "--api-url", "--token-file", "--state-dir", "--max-new",
 })
 # With no positional argument these keep the existing behaviour (help, version, or the
 # read/build commands' usage error) instead of running ./POSCAR ...
@@ -120,7 +122,8 @@ def build_parser() -> argparse.ArgumentParser:
             "(without STRUCTURE, ./POSCAR is used; see 'bmd-run STRUCTURE --help'). "
             "BMD Compute plans, prepares and submits it. "
             "The 'api' commands are the same machine-API operations one at a time, for advanced "
-            "use and recovery. The identity, options, analyze and plan commands are read/build-only "
+            "use and recovery. 'bmd-run batch MANIFEST' runs a campaign of calculations from a JSON "
+            "manifest (see 'bmd-run batch --help'). The identity, options, analyze and plan commands are read/build-only "
             "against BMD Compute v1.0.0 and cannot prepare or submit."
         ),
     )
@@ -282,6 +285,8 @@ def main(
     stderr = stderr or sys.stderr
     environ = os.environ if environ is None else environ
     first = _first_positional(argv)
+    if first is not None and argv[first] == "batch":
+        return _main_batch(argv[:first] + argv[first + 1:], api_transport_factory, environ, stdout, stderr)
     if first is None:
         names = {item.split("=", 1)[0] for item in argv}
         if not names & set(_NO_RUN_WITHOUT_STRUCTURE) or (
@@ -638,6 +643,124 @@ def _main_api(argv, api_transport_factory, environ, stdout, stderr) -> int:
     else:
         stdout.write(_redact(machine_output.render_result(command, result), fragments) + "\n")
     return EXIT_OK
+
+
+def build_batch_parser() -> argparse.ArgumentParser:
+    parser = _ArgumentParser(
+        prog="bmd-run batch",
+        usage="bmd-run batch MANIFEST [--max-new N] [options]\n       bmd-run batch status MANIFEST [--local] [options]",
+        description=(
+            "Run a campaign of calculations listed in a JSON manifest through BMD Compute, one attempt per "
+            "cell, using the same plan, record, prepare and submit operations as 'bmd-run STRUCTURE'. Each "
+            "cell is recorded locally before anything is sent; running the batch again continues it and "
+            "never creates a second attempt for a recorded cell. At most --max-new new attempts are started "
+            f"per run (default {batch.DEFAULT_MAX_NEW}); BMD Compute's job and submission quotas apply. "
+            "'batch status' only reads: it reports each cell as pending, submitted, completed, failed or "
+            "uncertain, and never prepares or submits."
+        ),
+    )
+    parser.add_argument("words", nargs="+", metavar="[status] MANIFEST",
+                        help="The manifest file; 'status MANIFEST' reports instead of running.")
+    parser.add_argument("--max-new", default=None,
+                        help=f"New attempts to start in this run, 1-{batch.MAX_NEW_LIMIT} (default {batch.DEFAULT_MAX_NEW}).")
+    parser.add_argument("--local", action="store_true",
+                        help="status only: report the local records without contacting BMD Compute.")
+    parser.add_argument("--api-url", default=None, help=f"Machine-API origin (default ${API_URL_ENV} or {DEFAULT_API_URL}).")
+    parser.add_argument("--token-file", default=None, help="Protected API token file.")
+    parser.add_argument("--state-dir", default=None, help="Attempt and campaign state directory.")
+    parser.add_argument("--timeout", type=float, default=None, help="Seconds per request.")
+    parser.add_argument("--json", action="store_true", help="Emit one bmd_run.batch_output v1 JSON document.")
+    return parser
+
+
+def _main_batch(argv, api_transport_factory, environ, stdout, stderr) -> int:
+    """``bmd-run batch [status] MANIFEST``: see ``batch.py``."""
+
+    want_json = "--json" in argv
+    command = "batch"
+    api_url = None
+    manifest = None
+    options: dict = {"max_new": None, "refresh": None}
+    fragments: tuple = ()
+    rows: list = []
+    new_attempts = None
+    try:
+        args = build_batch_parser().parse_args(argv)
+        want_json = args.json
+        words = args.words
+        if len(words) == 2 and words[0] == "status":
+            command = "batch_status"
+        elif len(words) != 1 or words[0] == "status":
+            raise UsageError("Give one manifest file, or 'status' and a manifest file.",
+                             suggestion="A manifest named like a command can be given as ./NAME.")
+        manifest_path = words[-1]
+        if command == "batch_status" and args.max_new is not None:
+            raise UsageError("--max-new applies to running a batch, not to 'batch status'.")
+        if command == "batch" and args.local:
+            raise UsageError("--local applies to 'batch status' only.")
+        if command == "batch":
+            max_new = batch.DEFAULT_MAX_NEW if args.max_new is None else args.max_new
+            if not re.match(r"^[0-9]{1,3}$", str(max_new)) or not 1 <= int(max_new) <= batch.MAX_NEW_LIMIT:
+                raise UsageError(f"--max-new must be an integer from 1 to {batch.MAX_NEW_LIMIT}.")
+            options = {"max_new": int(max_new), "refresh": None}
+        else:
+            options = {"max_new": None, "refresh": not args.local}
+        manifest = batch.load_manifest(manifest_path, _api_request)  # every request is built before anything is sent
+        store = CampaignStore(Path(args.state_dir).expanduser() if args.state_dir else default_state_dir(environ))
+        api = None
+        if command == "batch" or not args.local:
+            api_url = args.api_url or environ.get(API_URL_ENV) or DEFAULT_API_URL
+            timeout = API_DEFAULT_TIMEOUT_S if args.timeout is None else args.timeout
+            token = load_token(args.token_file, environ)
+            fragments = token.secret_fragments()
+            api = api_transport_factory(api_url, token, environ=environ, timeout=timeout)
+            api_url = api.base_url
+
+        if command == "batch_status":
+            result = batch.batch_status(api, store, manifest)
+            rows, error = result["rows"], result["stopped"]
+            if want_json:
+                stdout.write(_redact(batch.to_json(batch.envelope(
+                    command=command, api_url=api_url, manifest=manifest, options=options, rows=rows,
+                    new_attempts=None, error=error, warnings=result["warnings"])), fragments))
+            else:
+                stdout.write(_redact(batch.render_status(manifest, rows, api is not None, result["warnings"]), fragments) + "\n")
+            return error.exit_code if error is not None else EXIT_OK
+
+        def notify(event, value):
+            if event == "reserved" and want_json:
+                stderr.write(f"bmd-run: cell {value[0]} attempt {value[1]} recorded\n")
+            elif event == "cell" and not want_json:
+                stdout.write(_redact(batch.render_cell_progress(value), fragments) + "\n")
+                stdout.flush()
+
+        if not want_json:
+            stdout.write(batch.render_run_header(manifest, options["max_new"]) + "\n")
+        result = batch.run_batch(api, store, manifest, max_new=options["max_new"], notify=notify)
+        rows, new_attempts = result["rows"], result["new_attempts"]
+        stopped, cell_error = result["stopped"], result["cell_error"]
+        error = stopped if isinstance(stopped, ClientError) else cell_error
+        if isinstance(stopped, KeyboardInterrupt):
+            error = UsageError("Interrupted. The outcome of the request in progress is unknown.",
+                               suggestion="Check the campaign with 'bmd-run batch status' before anything else.")
+        if want_json:
+            stdout.write(_redact(batch.to_json(batch.envelope(
+                command=command, api_url=api_url, manifest=manifest, options=options, rows=rows,
+                new_attempts=new_attempts, error=error)), fragments))
+        else:
+            stdout.write(_redact("\n".join([batch.render_summary(rows, new_attempts),
+                                            batch.render_run_footer(manifest_path, stopped)]), fragments) + "\n")
+        if isinstance(stopped, KeyboardInterrupt):
+            return 130
+        return error.exit_code if error is not None else EXIT_OK
+    except ClientError as error:
+        if want_json:
+            stdout.write(_redact(batch.to_json(batch.envelope(
+                command=command, api_url=api_url, manifest=manifest, options=options, rows=rows,
+                new_attempts=new_attempts, error=error)), fragments))
+        else:
+            stderr.write(_redact(machine_output.render_error(error), fragments) + "\n")
+        return error.exit_code
 
 
 def entry_point() -> None:  # pragma: no cover
