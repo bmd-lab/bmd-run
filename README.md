@@ -114,8 +114,8 @@ plan, record, prepare and submit operations), and each is bound to exactly one
 attempt that is reused whenever the batch is run again.
 
 ```
-bmd-run batch benchmark.json               # start at most 1 new attempt (the default)
-bmd-run batch benchmark.json --max-new 2   # start at most 2 new attempts
+bmd-run batch benchmark.json               # submit every calculation in the manifest
+bmd-run batch benchmark.json --max-new 2   # testing: start at most 2 new attempts this run
 bmd-run batch status benchmark.json        # read-only report, refreshed from BMD Compute
 bmd-run batch status benchmark.json --local   # report from the local records only
 ```
@@ -147,8 +147,10 @@ bmd-run batch status benchmark.json --local   # report from the local records on
 - Optional `cpus` and `memory_gb` (positive JSON integers), `walltime`
   (`HH:MM:SS`) and `queue`, passed to BMD Compute unchanged. No other keys are
   accepted; BMD Compute resolves everything else.
-- At most 200 calculations. The whole manifest is read and every request is built
-  before anything is sent; any problem stops the batch with nothing sent.
+- Any number of calculations (the manifest file may be up to 64 MiB). The whole
+  manifest is read and every request is built before anything is sent; any problem
+  stops the batch with nothing sent. Calculations are submitted one after another;
+  SLURM schedules them.
 
 ### What a run does
 
@@ -156,18 +158,18 @@ For each calculation, in manifest order:
 
 1. A cell that has never run is recorded locally first
    (`<state dir>/campaigns/<campaign>/<cell>.json`, private), with the attempt UUID
-   it will use, before that UUID is sent anywhere. Only `--max-new` cells (default
-   1, at most 20) are started per run; the rest are reported as not started.
+   it will use, before that UUID is sent anywhere. Every remaining cell is started,
+   unless `--max-new N` (for testing) limits this run to N new attempts.
 2. The attempt is then advanced with the R1 operations: plan, record the attempt,
    Prepare, Submit. The cell keeps the plan digest and the plan's structure
    summary, resolved workflow and resources.
 3. A cell whose attempt is already submitted is left alone (nothing is sent). A
-   cell whose submission is **uncertain** is never submitted again by the batch;
-   check it with `bmd-run api status UUID` (shown in the output).
+   cell whose submission is **uncertain** keeps its attempt and is never submitted
+   again by the batch; check it with `bmd-run api status UUID` (shown in the output).
 
 **Restarting is safe.** Running the same command again continues the campaign:
 recorded cells reuse their attempt (an unprepared one is prepared, a prepared one is
-submitted), and new cells start up to `--max-new`. A recorded cell whose structure
+submitted), and the remaining cells start. A recorded cell whose structure
 file, workflow or resources have changed is refused, with nothing sent; give a
 changed calculation a new cell identifier. New calculations may be appended to the
 manifest at any time.
@@ -175,21 +177,19 @@ manifest at any time.
 **One run per campaign.** While a `bmd-run batch` is advancing a campaign it holds
 an exclusive lock on that campaign's state (`<state dir>/campaigns/<campaign>.lock`,
 a POSIX `flock`). A second `bmd-run batch` for the same campaign, through any
-manifest file, stops at once with exit code 21 and sends or records nothing, so
-`--max-new` cannot be exceeded by running two at once. The lock is released when
+manifest file, stops at once with exit code 21 and sends or records nothing. The lock is released when
 the run ends, however it ends (including Ctrl-C or the process being killed).
 Other campaigns run independently, and `batch status` takes no lock, so it can be
 used while a campaign is running.
 
 **When it stops.** A problem with one calculation (BMD Compute rejects its
 structure or workflow, its plan changed, preparation or submission definitely
-failed) is recorded on that cell and the batch moves on. Anything else stops the
-batch at that cell and leaves the rest untouched: a BMD Compute quota (active jobs,
-submissions or new attempts in 24 hours), an uncertain submission, a lost
-connection or timeout, a credential or scope problem, or a local state problem.
-The exit code is that of the first error (see Exit codes); run the batch again
-later to continue. BMD Compute's quotas apply unchanged; the client adds the
-`--max-new` bound and never retries on its own.
+failed, or its submission outcome is uncertain) is recorded on that cell and the
+batch moves on to the independent cells. Anything campaign-wide stops the batch at
+that cell and leaves the rest untouched: a lost connection or timeout, a credential
+or scope problem, a local state problem, Ctrl-C, or any other error not specific to
+one cell. The exit code is that of the first error (see Exit codes); run the batch
+again to continue. The client never retries on its own.
 
 ### Status
 

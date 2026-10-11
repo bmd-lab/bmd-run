@@ -110,7 +110,6 @@ class Manifest(BatchBase):
             self.manifest([SI], campaign="../escape"),
             self.manifest([SI], campaign=""),
             self.manifest([]),
-            self.manifest([SI] * (batch.MAX_CALCULATIONS + 1)),
             self.manifest([{**SI, "cell": "a/b"}]),
             self.manifest([{**SI, "cell": ""}]),
             self.manifest([{k: v for k, v in SI.items() if k != "cell"}]),
@@ -168,9 +167,30 @@ class Manifest(BatchBase):
 
 
 class Running(BatchBase):
-    def test_default_starts_one_new_attempt_and_reruns_continue(self):
+    def test_default_submits_every_cell_and_a_rerun_sends_nothing(self):
         manifest = self.manifest([SI, NIO, CIF])
         code, document, err = self.batch(manifest)
+        self.assertEqual(code, 0, err)
+        self.assertIsNone(document["options"]["max_new"])
+        self.assertEqual([r["action"] for r in document["cells"]], ["submitted"] * 3)
+        self.assertEqual(document["summary"]["new_attempts"], 3)
+        before = len(self.compute.requests)
+        code, document, _ = self.batch(manifest)
+        self.assertEqual((code, [r["action"] for r in document["cells"]]), (0, ["already_submitted"] * 3))
+        self.assertEqual(self.compute.requests[before:], [])
+        self.assertEqual(self.compute.sbatch_calls, 3)
+        self.assert_one_attempt_per_cell()
+
+    def test_hundreds_of_cells_in_one_run(self):
+        cells = [{**SI, "cell": f"si-{n:04d}"} for n in range(250)]
+        code, document, err = self.batch(self.manifest(cells))
+        self.assertEqual(code, 0, err)
+        self.assertEqual(document["summary"]["submitted"], 250)
+        self.assertEqual((len(self.compute.ledger), self.compute.sbatch_calls), (250, 250))
+
+    def test_max_new_limits_a_run_and_reruns_continue(self):
+        manifest = self.manifest([SI, NIO, CIF])
+        code, document, err = self.batch(manifest, "--max-new", "1")
         self.assertEqual(code, 0, err)
         self.assertEqual(document["options"]["max_new"], 1)
         self.assertEqual([r["action"] for r in document["cells"]], ["submitted", "not_started", "not_started"])
@@ -183,12 +203,12 @@ class Running(BatchBase):
         self.assertIn(f"cell si-energy attempt {first} recorded", err)
 
         before = len(self.compute.requests)
-        code, document, _ = self.batch(manifest)
+        code, document, _ = self.batch(manifest, "--max-new", "1")
         self.assertEqual([r["action"] for r in document["cells"]], ["already_submitted", "submitted", "not_started"])
         self.assertNotIn(first, "".join(r["path"] for r in self.compute.requests[before:]), "no request for a submitted cell")
-        self.batch(manifest)
+        self.batch(manifest, "--max-new", "1")
         before = len(self.compute.requests)
-        code, document, _ = self.batch(manifest)
+        code, document, _ = self.batch(manifest, "--max-new", "1")
         self.assertEqual((code, [r["action"] for r in document["cells"]]), (0, ["already_submitted"] * 3))
         self.assertEqual(self.compute.requests[before:], [], "a finished batch sends nothing")
         self.assertEqual(self.compute.sbatch_calls, 3)
@@ -197,11 +217,11 @@ class Running(BatchBase):
 
     def test_max_new_bounds(self):
         manifest = self.manifest([SI, NIO])
-        for value in ("0", "21", "-1", "two", "1.5"):
+        for value in ("0", "-1", "two", "1.5", ""):
             code, _, _ = self.batch(manifest, "--max-new", value)
             self.assertEqual(code, errors.EXIT_USAGE, value)
         self.assertEqual(self.calls(), [])
-        code, document, _ = self.batch(manifest, "--max-new", "2")
+        code, document, _ = self.batch(manifest, "--max-new", "1000")  # no ceiling
         self.assertEqual((code, document["summary"]["new_attempts"], self.compute.sbatch_calls), (0, 2, 2))
 
     def test_cell_and_plan_are_recorded_before_any_remote_side_effect(self):
@@ -223,10 +243,12 @@ class Running(BatchBase):
         self.assertEqual(rec2[attempt]["local_state"], "planned")
 
     def test_text_output(self):
-        code, out, _ = self.text(self.manifest([SI, NIO]))
+        code, out, _ = self.text(self.manifest([SI]))
+        self.assertIn("campaign bench-1, 1 calculation\n", out)
+        code, out, _ = self.text(self.manifest([SI, NIO], campaign="bench-2", name="b2.json"), "--max-new", "1")
         self.assertEqual(code, 0)
-        self.assertIn("campaign bench-1, 2 calculations, at most 1 new attempt this run", out)
-        self.assertIn("SLURM job 920001", out)
+        self.assertIn("campaign bench-2, 2 calculations, at most 1 new attempt this run", out)
+        self.assertIn("SLURM job 920002", out)
         self.assertIn("not started (new-attempt limit reached)", out)
         self.assertIn("bmd-run batch status", out)
 
@@ -303,7 +325,7 @@ class Recovery(BatchBase):
             self.store.create_cell(new_cell(campaign="bench-1", cell=calc.cell, attempt_id=attempt,
                                             api_origin=self.server.url, request_sha=calc.request_sha,
                                             structure_source=calc.source))  # as if a run stopped while planning
-        code, document, _ = self.batch(manifest)
+        code, document, _ = self.batch(manifest, "--max-new", "1")
         self.assertEqual([r["action"] for r in document["cells"]], ["submitted", "not_started"])
         self.assertEqual(list(self.compute.ledger), ["15152671-4724-4962-8d4c-78425ed6b968"])
 
@@ -386,17 +408,18 @@ class Recovery(BatchBase):
         self.assertEqual((code, self.cells(document)["nio-dos"]["attempt_id"]), (0, nio["attempt_id"]))
         self.assert_one_attempt_per_cell()
 
-    def test_uncertain_submission_stops_the_batch_and_is_never_retried(self):
+    def test_uncertain_submission_is_recorded_never_retried_and_the_batch_continues(self):
         manifest = self.manifest([SI, NIO])
         for fault in (None, None, "timeout_after_processing"):
             self.compute.add_fault(fault)
-        code, document, _ = self.batch(manifest, "--max-new", "2", timeout="0.5")
+        code, document, _ = self.batch(manifest, timeout="0.5")
         self.assertEqual(code, errors.EXIT_SUBMISSION_UNCERTAIN)
         si = self.cells(document)["si-energy"]
-        self.assertEqual((si["action"], si["category"]), ("stopped", "uncertain"))
-        self.assertEqual(self.cells(document)["nio-dos"]["action"], "not_reached")
-        code, document, _ = self.batch(manifest, "--max-new", "2")
-        self.assertEqual([r["action"] for r in document["cells"]], ["uncertain_skipped", "submitted"])
+        self.assertEqual((si["action"], si["category"], si["last_error"]["kind"]),
+                         ("failed", "uncertain", "submission_uncertain"))
+        self.assertEqual(self.cells(document)["nio-dos"]["action"], "submitted")
+        code, document, _ = self.batch(manifest)
+        self.assertEqual([r["action"] for r in document["cells"]], ["uncertain_skipped", "already_submitted"])
         self.assertEqual(self.submits(si["attempt_id"]), [False, True])
         self.assertEqual(self.compute.sbatch_calls, 2)
 
@@ -528,7 +551,7 @@ class Status(BatchBase):
 
     def test_text_status_table(self):
         manifest = self.manifest([SI, NIO])
-        self.batch(manifest)
+        self.batch(manifest, "--max-new", "1")
         code, out, _ = self.text("status", manifest)
         self.assertEqual(code, 0)
         self.assertIn("REQ MEM GB", out)
