@@ -30,13 +30,17 @@ from pathlib import Path
 from _support import ROOT  # noqa: F401  (puts src/ on sys.path)
 
 API_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1"
+PHONON_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_phonons"  # recorded from bmd-compute 93cfe16
 SI_POSCAR = API_FIXTURES / "Si.POSCAR"
 NIO_POSCAR = API_FIXTURES / "NiO.POSCAR"
 SI_CIF = API_FIXTURES / "Si.cif"
 
 
 def fixture(name: str) -> dict:
-    return json.loads((API_FIXTURES / f"{name}.json").read_text(encoding="utf-8"))
+    path = API_FIXTURES / f"{name}.json"
+    if not path.is_file():
+        path = PHONON_FIXTURES / f"{name}.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def canonical(value) -> str:
@@ -53,6 +57,7 @@ PLAN_CASES = (
     "plan_nio_poscar_electronic_dos",
     "plan_si_custom_relax_static",
     "plan_si_energy_only_resources",
+    "plan_si_poscar_phonons",
     "plan_error_structure_invalid",
     "plan_error_calculation_invalid",
     "plan_error_unknown_desired_output",

@@ -1,0 +1,374 @@
+{
+  "case": "plan_si_poscar_phonons",
+  "request": {
+    "body": {
+      "structure": {
+        "format": "poscar",
+        "text": "Si\n1.0\n0.0 2.715 2.715\n2.715 0.0 2.715\n2.715 2.715 0.0\nSi\n2\ndirect\n0.00 0.00 0.00\n0.25 0.25 0.25\n"
+      },
+      "workflow": {
+        "desired_output": "phonons"
+      }
+    },
+    "method": "POST",
+    "path": "/api/v1/plans",
+    "principal": "planner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "automatic_treatments": {
+        "advisory_consideration_ids": [],
+        "applied_treatments": [],
+        "base_workflow": {
+          "label": null,
+          "recipe": "phonons",
+          "stages": [
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "relax",
+              "theory": "pbe"
+            },
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "phonon_forces",
+              "theory": "pbe"
+            }
+          ]
+        },
+        "desired_output": "phonons",
+        "dft_u": null,
+        "mode": "bmd_managed_desired_output",
+        "not_applicable_considerations": [],
+        "omitted_treatments": [],
+        "resolved_workflow": {
+          "label": null,
+          "recipe": "phonons",
+          "stages": [
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "relax",
+              "theory": "pbe"
+            },
+            {
+              "label": null,
+              "modifiers": [],
+              "options": {},
+              "stage_type": "phonon_forces",
+              "theory": "pbe"
+            }
+          ]
+        },
+        "source": "backend.calculations.default_treatments"
+      },
+      "capability_schema_version": 1,
+      "method_considerations": null,
+      "plan_digest": "sha256:1d39f6511c7f8f8cbe46ae40b0095e179d6bd5478f9db2927df5332b1675c72e",
+      "plan_digest_version": 1,
+      "policies": {
+        "automatic_dft_u": {
+          "id": "bmd_compute.dft_u",
+          "version": 1
+        },
+        "custodian": {
+          "id": "bmd_compute.vasp",
+          "version": 1
+        },
+        "method_considerations": {
+          "version": 6
+        },
+        "new_calculation_admission": {
+          "id": "bmd_compute.new_calculation_admission",
+          "version": 1
+        },
+        "plan_digest": {
+          "id": "bmd_compute.plan_digest",
+          "version": 1
+        },
+        "runtime_parity": {
+          "id": "bmd_compute.runtime_parity",
+          "version": 1
+        }
+      },
+      "request": {
+        "desired_output": "phonons",
+        "structure_format": "poscar",
+        "workflow_mode": "desired_output"
+      },
+      "resources": {
+        "account": "power-leeburton-users_v2",
+        "cpus": 24,
+        "memory_gb": 128,
+        "nodes": 1,
+        "partition": "leeburton-pool",
+        "walltime": "72:00:00"
+      },
+      "schema": "bmd_compute.api.plan",
+      "schema_version": 1,
+      "scientific_inputs": {
+        "potcar_functional": "PBE_64",
+        "stages": [
+          {
+            "incar": {
+              "settings": {
+                "ADDGRID": true,
+                "ALGO": "Fast",
+                "EDIFF": 1e-07,
+                "EDIFFG": -0.001,
+                "ENCUT": 700.0,
+                "IBRION": 2,
+                "ISIF": 3,
+                "ISMEAR": 0,
+                "ISPIN": 1,
+                "LASPH": true,
+                "LCHARG": false,
+                "LREAL": false,
+                "LWAVE": false,
+                "NCORE": 8,
+                "NELM": 200,
+                "NSW": 99,
+                "PREC": "Accurate",
+                "SIGMA": 0.2
+              },
+              "sha256": "b856032c96da3c953177ef8901683b09b4f86b7570cb530d52fedc1f4aa33cb9"
+            },
+            "index": 1,
+            "kpoints": {
+              "kpts": [
+                [
+                  7,
+                  7,
+                  7
+                ]
+              ],
+              "kpts_shift": [
+                0,
+                0,
+                0
+              ],
+              "num_kpts": 0,
+              "sha256": "e0e1cf4c0cd4d5193ff4cfadbc22c1a8aa24e33f40d3a27f1a9feed3f6f5dde0",
+              "style": "Gamma"
+            },
+            "modifiers": [],
+            "options": {},
+            "poscar": {
+              "num_sites": 2,
+              "reduced_formula": "Si",
+              "sha256": "58eebc540b519efc86b3ff0eb93a42e2a9fc0188da13dd73467d7c59730f34da"
+            },
+            "potcar_symbols": [
+              "Si"
+            ],
+            "stage_type": "relax",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          },
+          {
+            "incar": {
+              "settings": {
+                "ALGO": "Normal",
+                "EDIFF": 1e-07,
+                "ENCUT": 700.0,
+                "IBRION": 2,
+                "ISIF": 3,
+                "ISMEAR": -5,
+                "ISPIN": 1,
+                "LAECHG": false,
+                "LASPH": true,
+                "LCHARG": false,
+                "LELF": false,
+                "LORBIT": 11,
+                "LREAL": false,
+                "LVTOT": true,
+                "LWAVE": false,
+                "NELM": 200,
+                "NSW": 0,
+                "PREC": "Accurate",
+                "SIGMA": 0.2
+              },
+              "sha256": "654cde98697e3b8d3ede67754723ca87067105e1c19d925974c45a787dc6cae8"
+            },
+            "index": 2,
+            "kpoints": {
+              "kpts": [
+                [
+                  2,
+                  2,
+                  2
+                ]
+              ],
+              "kpts_shift": [
+                0,
+                0,
+                0
+              ],
+              "num_kpts": 0,
+              "sha256": "75e8d8e8f61a141d1474e70d865519a038ddef78b79b1f3414357a922c2c9b2c",
+              "style": "Gamma"
+            },
+            "modifiers": [],
+            "options": {},
+            "phonon_plan": {
+              "basis": "submitted_structure",
+              "displacement_count": 1,
+              "note": "Computed by atomate2/Phonopy from the submitted structure. The workflow recomputes the supercell and displacements from the relaxed structure at run time.",
+              "settings": {
+                "analysis_kwargs": {
+                  "calculate_pdos": false,
+                  "create_force_constants_file": true,
+                  "force_constants_filename": "FORCE_CONSTANTS"
+                },
+                "automatic_ncore": false,
+                "born_maker": null,
+                "bulk_relax_maker": null,
+                "displacement_angstrom": 0.01,
+                "force_auto_ispin": false,
+                "force_bmd_incar_amendments": {
+                  "ENAUG": null,
+                  "GGA": null,
+                  "ISPIN": 1,
+                  "LMIXTAU": null
+                },
+                "force_maker": "atomate2.vasp.jobs.phonons.PhononDisplacementMaker",
+                "kpath_scheme": "seekpath",
+                "maker": "atomate2.vasp.flows.phonons.PhononMaker",
+                "outputs": [
+                  "phonopy.yaml",
+                  "FORCE_CONSTANTS",
+                  "phonon_band_structure.yaml",
+                  "phonon_dos.yaml"
+                ],
+                "precursor_relax_incar": {
+                  "EDIFF": 1e-07,
+                  "EDIFFG": -0.001,
+                  "ENCUT": 700
+                },
+                "static_energy_maker": null,
+                "store_force_constants": true,
+                "supercell": {
+                  "min_length_angstrom": 10.0,
+                  "prefer_90_degrees": true,
+                  "selection": "atomate2 get_supercell_size (automatic)"
+                },
+                "sym_reduce": true,
+                "symprec": 1e-05,
+                "use_symmetrized_structure": null,
+                "workflow_id": "bmd_compute.phonons.atomate2_finite_displacement",
+                "workflow_version": 1
+              },
+              "stages": [
+                {
+                  "description": "Geometry Optimisation (PBE) with phonon-grade convergence",
+                  "name": "relax (preceding stage)"
+                },
+                {
+                  "description": "atomate2/Phonopy automatic supercell",
+                  "name": "get_supercell_size"
+                },
+                {
+                  "description": "Phonopy finite displacements",
+                  "name": "generate_phonon_displacements"
+                },
+                {
+                  "description": "1 VASP force calculation(s) on 64-atom supercells",
+                  "name": "run_phonon_displacements"
+                },
+                {
+                  "description": "Phonopy force constants, band structure (seekpath) and DOS",
+                  "name": "generate_frequencies_eigenvectors"
+                }
+              ],
+              "supercell_atom_count": 64,
+              "supercell_matrix": [
+                [
+                  -2,
+                  2,
+                  2
+                ],
+                [
+                  2,
+                  -2,
+                  2
+                ],
+                [
+                  2,
+                  2,
+                  -2
+                ]
+              ]
+            },
+            "poscar": {
+              "num_sites": 64,
+              "reduced_formula": "Si",
+              "sha256": "3487483ba276707f98f4f9bf7e7d4afc78a536c5e188c69e85b6d90bccf50197"
+            },
+            "potcar_symbols": [
+              "Si"
+            ],
+            "stage_type": "phonon_forces",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          }
+        ]
+      },
+      "software": {
+        "modules": [
+          "intel/rocky8-oneAPI-2023",
+          "vasp/rocky8-intel-6.4.1"
+        ],
+        "runtime_parity_packages": {
+          "atomate2": "0.1.5",
+          "custodian": "2025.12.14",
+          "emmet-core": "0.87.1",
+          "jobflow": "0.1.19",
+          "phonopy": "4.8.1",
+          "pymatgen": "2026.5.4",
+          "pymatgen-core": "2026.7.16",
+          "seekpath": "2.1.0",
+          "spglib": "2.7.0"
+        }
+      },
+      "structure": {
+        "canonical_sha256": "1278a6b3dcea3bd2bf4771f01fd64c34c2517abf7158a4a5a085d40bc0e0659d",
+        "crystal_system": "cubic",
+        "formula": "Si2",
+        "natoms": 2,
+        "reduced_formula": "Si",
+        "space_group_number": 227,
+        "space_group_symbol": "Fd-3m",
+        "volume": 40.026
+      },
+      "workflow": {
+        "recipe": "phonons",
+        "stage_count": 2,
+        "stages": [
+          {
+            "index": 1,
+            "modifiers": [],
+            "options": {},
+            "stage_type": "relax",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          },
+          {
+            "index": 2,
+            "modifiers": [],
+            "options": {},
+            "stage_type": "phonon_forces",
+            "theory": "pbe",
+            "vasp_executable": "vasp_std"
+          }
+        ]
+      }
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

@@ -26,7 +26,8 @@ from bmd_run.api_transport import ApiResponse
 from bmd_run.errors import ClientError
 
 SCHEMA = json.loads((ROOT / "src" / "bmd_run" / "schemas" / "machine-output-v1.schema.json").read_text(encoding="utf-8"))
-PLANS = ("plan_si_poscar_energy_only", "plan_nio_poscar_electronic_dos", "plan_si_custom_relax_static", "plan_si_cif_energy_only")
+PLANS = ("plan_si_poscar_energy_only", "plan_nio_poscar_electronic_dos", "plan_si_custom_relax_static", "plan_si_cif_energy_only",
+         "plan_si_poscar_phonons")
 ATTEMPTS = ("attempt_get_submitted", "attempt_get_uncertain", "attempt_submit", "attempt_prepare",
             "attempt_get_labelled_completed")
 ERRORS = tuple(

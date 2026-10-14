@@ -129,8 +129,16 @@ def render_plan(plan: dict) -> str:
     inputs = plan["scientific_inputs"]
     lines += ["", f"GENERATED INPUTS (POTCAR functional {_show(inputs['potcar_functional'])})"]
     for stage in inputs["stages"]:
-        lines += ["", f"  Stage {stage['index']}  POTCAR: {' '.join(stage['potcar_symbols']) or '(none recognised)'}",
-                  f"  INCAR (sha256 {stage['incar']['sha256']})"]
+        lines += ["", f"  Stage {stage['index']}  POTCAR: {' '.join(stage['potcar_symbols']) or '(none recognised)'}"]
+        if stage.get("phonon_plan"):
+            phonon = stage["phonon_plan"]
+            matrix = " / ".join(" ".join(str(n) for n in row) for row in phonon["supercell_matrix"])
+            lines += [f"  Phonons: {_phonon_line(phonon)}",
+                      f"    supercell matrix {matrix}; symprec {render_number(phonon['symprec'])}; "
+                      f"min supercell length {render_number(phonon['supercell_min_length_angstrom'])} Å; "
+                      f"k-path {_show(phonon['kpath_scheme'])}",
+                      "    INCAR, KPOINTS and POSCAR below are those of the first displaced supercell"]
+        lines.append(f"  INCAR (sha256 {stage['incar']['sha256']})")
         lines += [f"    {item['tag']} = {render_incar_value(item['value'])}" for item in stage["incar"]["tags"]]
         if stage["incar"]["withheld_tag_count"]:
             lines.append(f"    ({stage['incar']['withheld_tag_count']} tag(s) withheld)")
@@ -215,7 +223,10 @@ _WORKFLOW_NAMES = {
     "relaxed_structure": "Relaxed structure",
     "electronic_dos": "Electronic density of states",
     "electronic_band_structure": "Electronic band structure",
+    "phonons": "Phonons",
 }
+# Stage types the frozen v1 label table does not know.
+_STAGE_TYPE_LABELS = {"phonon_forces": "Phonon force calculations"}
 
 
 def run_recovery(stage: str, attempt_id: Optional[str]) -> List[str]:
@@ -272,7 +283,8 @@ def run_envelope(*, api_url: Optional[str], request: Optional[dict], progress: d
 
 def _stage_name(stage: dict) -> str:
     theory = labels.THEORY_LABELS.get(stage["theory"] or "", _show(stage["theory"]))
-    kind = labels.STAGE_TYPE_LABELS.get(stage["stage_type"] or "", _show(stage["stage_type"]))
+    kind = labels.STAGE_TYPE_LABELS.get(stage["stage_type"] or "") or _STAGE_TYPE_LABELS.get(
+        stage["stage_type"] or "", _show(stage["stage_type"]))
     name = f"{theory} {kind}"
     if stage["modifiers"]:
         name += " + " + ", ".join(labels.MODIFIER_LABELS.get(m, m) for m in stage["modifiers"])
@@ -295,7 +307,17 @@ def render_run_plan(plan: dict, structure_file: str) -> str:
         f"walltime {resources['walltime']}",
         f"Plan digest:  {plan['plan_digest']}",
     ]
+    lines += [f"Phonons:      {_phonon_line(stage['phonon_plan'])}"
+              for stage in plan["scientific_inputs"]["stages"] if stage.get("phonon_plan")]
     return "\n".join(lines)
+
+
+def _phonon_line(phonon: dict) -> str:
+    atoms = phonon["supercell_atom_count"]
+    count = phonon["displacement_count"]
+    return (f"{count} displacement{'s' if count != 1 else ''} on {atoms if atoms is not None else '?'}-atom supercells "
+            f"(displacement {render_number(phonon['displacement_angstrom'])} Å, from the submitted structure; "
+            "recomputed from the relaxed structure at run time)")
 
 
 def render_run_event(event: str, value, structure_file: str) -> Optional[str]:

@@ -886,6 +886,9 @@
               "pattern": "^[0-9a-f]{64}$"
             }
           }
+        },
+        "phonon_plan": {
+          "$ref": "#/$defs/phonon_plan"
         }
       }
     },
@@ -994,7 +997,8 @@
                     "energy_only",
                     "relaxed_structure",
                     "electronic_dos",
-                    "electronic_band_structure"
+                    "electronic_band_structure",
+                    "phonons"
                   ]
                 },
                 {
@@ -1788,6 +1792,101 @@
           "oneOf": [
             {
               "$ref": "#/$defs/attempt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "phonon_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "displacement_angstrom",
+        "displacement_count",
+        "kpath_scheme",
+        "supercell_atom_count",
+        "supercell_matrix",
+        "supercell_min_length_angstrom",
+        "sym_reduce",
+        "symprec",
+        "workflow_id",
+        "workflow_version"
+      ],
+      "properties": {
+        "basis": {
+          "oneOf": [
+            {
+              "enum": [
+                "submitted_structure"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supercell_matrix": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "supercell_atom_count": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "displacement_count": {
+          "type": "integer"
+        },
+        "workflow_id": {
+          "oneOf": [
+            {
+              "enum": [
+                "bmd_compute.phonons.atomate2_finite_displacement"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workflow_version": {
+          "type": "integer"
+        },
+        "displacement_angstrom": {
+          "type": "number"
+        },
+        "symprec": {
+          "type": "number"
+        },
+        "sym_reduce": {
+          "type": "boolean"
+        },
+        "supercell_min_length_angstrom": {
+          "type": "number"
+        },
+        "kpath_scheme": {
+          "oneOf": [
+            {
+              "enum": [
+                "seekpath",
+                "setyawan_curtarolo",
+                "hinuma",
+                "latimer_munro"
+              ]
             },
             {
               "type": "null"

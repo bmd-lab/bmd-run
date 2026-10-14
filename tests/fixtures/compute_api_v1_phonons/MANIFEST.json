@@ -1,0 +1,8 @@
+{
+  "compute_commit": "93cfe16b212d356e271e62c4805433d3a9f19046",
+  "files": {
+    "plan_si_poscar_phonons.json": "ede9e7896070ea30394af2496391d57a2d088f36b1e534f7e772441b999584c9"
+  },
+  "schema": "bmd_run.compute_api_fixtures",
+  "schema_version": 1
+}
