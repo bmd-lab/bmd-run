@@ -43,7 +43,7 @@ bmd-run Si.vasp --custom-workflow workflow.json
 | `--dos` | Desired Output `electronic_dos` |
 | `--bands` | Desired Output `electronic_band_structure` |
 | `--custom FILE` | Custom workflow from FILE (same as `--custom-workflow FILE`) |
-| `--desired-output ID` | any Desired Output identifier, or `energy`/`relax`/`dos`/`bands` |
+| `--desired-output ID` | any Desired Output identifier (for example `phonons`), or `energy`/`relax`/`dos`/`bands` |
 
 Only one workflow option may be given; combining any two (for example `--relax --dos`
 or `--dos --desired-output energy`) is an error and nothing is sent.

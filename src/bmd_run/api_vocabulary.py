@@ -36,7 +36,12 @@ CRYSTAL_SYSTEMS = v1.CRYSTAL_SYSTEMS
 ELEMENTS = v1.ELEMENTS
 PARTITIONS = v1.PARTITIONS
 ACCOUNTS = v1.ACCOUNTS
-DESIRED_OUTPUTS = ("energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure")
+DESIRED_OUTPUTS = ("energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure", "phonons")
+
+# backend/phonons/workflow.py at bmd-compute 93cfe16 (phonon_plan of a phonon_forces stage)
+PHONON_WORKFLOW_IDS = ("bmd_compute.phonons.atomate2_finite_displacement",)
+PHONON_PLAN_BASES = ("submitted_structure",)
+PHONON_KPATH_SCHEMES = ("seekpath", "setyawan_curtarolo", "hinuma", "latimer_munro")
 
 # backend/calculations/method_considerations.py, default_treatments.py, dft_u_policy.py
 CONSIDERATION_IDS = v1.CONSIDERATION_IDS

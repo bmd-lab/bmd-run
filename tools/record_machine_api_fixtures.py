@@ -39,6 +39,10 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1"
 V1_FIXTURES = ROOT / "tests" / "fixtures" / "compute_v1.0.0"
 REFERENCE_COMMIT = "e3fbb3beaf5c0084023df9fcdd76deea4edc4778"
+# The phonon Desired Output was added later (bmd-compute PR #46); its plan is recorded
+# separately, from that commit, so the main set above stays pinned to its own commit.
+PHONON_REFERENCE_COMMIT = "93cfe16b212d356e271e62c4805433d3a9f19046"
+PHONON_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_phonons"
 LOOPBACK = ("127.0.0.1", 50000)
 
 ATTEMPT_MAIN = "6f1d2c3b-4a59-4e68-8b7a-9c0d1e2f3a4b"
@@ -130,6 +134,25 @@ def record_all(compute: Path) -> dict:
         try:
             client, tokens, power, RemoteCommandResult, ledger_module = _setup(compute, Path(tmp))
             return _cases(client, tokens, power, RemoteCommandResult, ledger_module)
+        finally:
+            os.chdir(cwd)
+
+
+def record_phonons(compute: Path) -> dict:
+    with tempfile.TemporaryDirectory(prefix="bmd-run-api-fixtures-") as tmp:
+        cwd = os.getcwd()
+        try:
+            client, tokens, _power, _result, _ledger = _setup(compute, Path(tmp))
+            si = (V1_FIXTURES / "Si.POSCAR").read_text(encoding="utf-8")
+            body = {"structure": {"format": "poscar", "text": si}, "workflow": {"desired_output": "phonons"}}
+            response = client.post("/api/v1/plans", headers={"Authorization": f"Bearer {tokens['planner']}"}, json=body)
+            case = {
+                "case": "plan_si_poscar_phonons",
+                "request": {"method": "POST", "path": "/api/v1/plans", "principal": "planner", "body": body},
+                "response": {"status": response.status_code, "content_type": response.headers.get("content-type"),
+                             "body": _normalise(response.json())},
+            }
+            return {"structures": {}, "cases": {"plan_si_poscar_phonons": case}, "tokens": tokens}
         finally:
             os.chdir(cwd)
 
@@ -250,7 +273,7 @@ def _render(document) -> str:
     return json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
-def _files(recorded: dict) -> dict:
+def _files(recorded: dict, commit: str = REFERENCE_COMMIT) -> dict:
     files = {name: text for name, text in recorded["structures"].items()}
     for name, case in recorded["cases"].items():
         files[f"{name}.json"] = _render(case)
@@ -262,7 +285,7 @@ def _files(recorded: dict) -> dict:
     manifest = {
         "schema": "bmd_run.compute_api_fixtures",
         "schema_version": 1,
-        "compute_commit": REFERENCE_COMMIT,
+        "compute_commit": commit,
         "files": {name: hashlib.sha256(text.encode("utf-8")).hexdigest() for name, text in sorted(files.items())},
     }
     files["MANIFEST.json"] = _render(manifest)
@@ -271,23 +294,26 @@ def _files(recorded: dict) -> dict:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("mode", choices=("record", "compare"))
+    parser.add_argument("mode", choices=("record", "compare", "record-phonons", "compare-phonons"))
     parser.add_argument("--compute-checkout", required=True, type=Path)
     args = parser.parse_args(argv)
     compute = args.compute_checkout.resolve()
+    phonons = args.mode.endswith("-phonons")
+    reference = PHONON_REFERENCE_COMMIT if phonons else REFERENCE_COMMIT
+    fixtures = PHONON_FIXTURES if phonons else FIXTURES
     head = subprocess.run(["git", "-C", str(compute), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    if head != REFERENCE_COMMIT:
-        print(f"warning: Compute checkout is at {head or 'unknown'}, reference is {REFERENCE_COMMIT}", file=sys.stderr)
-    files = _files(record_all(compute))
-    if args.mode == "record":
-        FIXTURES.mkdir(parents=True, exist_ok=True)
+    if head != reference:
+        print(f"warning: Compute checkout is at {head or 'unknown'}, reference is {reference}", file=sys.stderr)
+    files = _files(record_phonons(compute), PHONON_REFERENCE_COMMIT) if phonons else _files(record_all(compute))
+    if args.mode.startswith("record"):
+        fixtures.mkdir(parents=True, exist_ok=True)
         for name, text in files.items():
-            (FIXTURES / name).write_text(text, encoding="utf-8")
-        print(f"recorded {len(files)} files into {FIXTURES}")
+            (fixtures / name).write_text(text, encoding="utf-8")
+        print(f"recorded {len(files)} files into {fixtures}")
         return 0
     differences = [name for name, text in files.items()
-                   if not (FIXTURES / name).is_file() or (FIXTURES / name).read_text(encoding="utf-8") != text]
-    extra = sorted(p.name for p in FIXTURES.iterdir() if p.is_file() and p.name not in files and p.name != "RECORDING.md")
+                   if not (fixtures / name).is_file() or (fixtures / name).read_text(encoding="utf-8") != text]
+    extra = sorted(p.name for p in fixtures.iterdir() if p.is_file() and p.name not in files and p.name != "RECORDING.md")
     for name in differences:
         print(f"DIFFERS: {name}")
     for name in extra:

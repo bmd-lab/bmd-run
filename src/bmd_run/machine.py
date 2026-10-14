@@ -519,7 +519,7 @@ def _input_stage(value, index, field) -> dict:
     incar = _object(stage.get("incar"), f"{field}.incar")
     poscar = _object(stage.get("poscar"), f"{field}.poscar")
     symbols = [_potcar_symbol(s, f"{field}.potcar_symbols") for s in _list(stage.get("potcar_symbols"), f"{field}.potcar_symbols", 120)]
-    return {
+    projected = {
         "index": index,
         "incar": {**_incar(incar.get("settings"), f"{field}.incar.settings"),
                   "sha256": _hex(incar.get("sha256"), f"{field}.incar.sha256")},
@@ -530,6 +530,44 @@ def _input_stage(value, index, field) -> dict:
             "num_sites": _int(poscar.get("num_sites"), f"{field}.poscar.num_sites", 1, 10**6),
             "sha256": _hex(poscar.get("sha256"), f"{field}.poscar.sha256"),
         },
+    }
+    if stage.get("phonon_plan") is not None:  # phonon_forces stages only (bmd-compute 93cfe16)
+        projected["phonon_plan"] = _phonon_plan(stage.get("phonon_plan"), f"{field}.phonon_plan")
+    return projected
+
+
+def _phonon_plan(value, field) -> dict:
+    """The bounded numbers and settings of Compute's ``phonon_plan`` (no prose, no class names)."""
+
+    plan = _object(value, field)
+    settings = _object(plan.get("settings"), f"{field}.settings")
+    supercell = _object(settings.get("supercell"), f"{field}.settings.supercell")
+    matrix = _list(plan.get("supercell_matrix"), f"{field}.supercell_matrix", 3)
+    if len(matrix) != 3:
+        raise _FAIL(f"{field}.supercell_matrix")
+    rows = []
+    for row in matrix:
+        row = _list(row, f"{field}.supercell_matrix", 3)
+        if len(row) != 3:
+            raise _FAIL(f"{field}.supercell_matrix")
+        rows.append([_int(item, f"{field}.supercell_matrix", -1000, 1000) for item in row])
+    sym_reduce = settings.get("sym_reduce")
+    if not isinstance(sym_reduce, bool):
+        raise _FAIL(f"{field}.settings.sym_reduce")
+    atoms = plan.get("supercell_atom_count")
+    return {
+        "basis": _member_or_none(plan.get("basis"), vocab.PHONON_PLAN_BASES),
+        "supercell_matrix": rows,
+        "supercell_atom_count": None if atoms is None else _int(atoms, f"{field}.supercell_atom_count", 1, 10**6),
+        "displacement_count": _int(plan.get("displacement_count"), f"{field}.displacement_count", 0, 10**6),
+        "workflow_id": _member_or_none(settings.get("workflow_id"), vocab.PHONON_WORKFLOW_IDS),
+        "workflow_version": _int(settings.get("workflow_version"), f"{field}.settings.workflow_version", 0, 10**6),
+        "displacement_angstrom": _number(settings.get("displacement_angstrom"), f"{field}.settings.displacement_angstrom", 0, 10),
+        "symprec": _number(settings.get("symprec"), f"{field}.settings.symprec", 0, 10),
+        "sym_reduce": sym_reduce,
+        "supercell_min_length_angstrom": _number(supercell.get("min_length_angstrom"),
+                                                 f"{field}.settings.supercell.min_length_angstrom", 0, 1000),
+        "kpath_scheme": _member_or_none(settings.get("kpath_scheme"), vocab.PHONON_KPATH_SCHEMES),
     }
 
 
