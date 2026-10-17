@@ -43,6 +43,11 @@ REFERENCE_COMMIT = "e3fbb3beaf5c0084023df9fcdd76deea4edc4778"
 # separately, from that commit, so the main set above stays pinned to its own commit.
 PHONON_REFERENCE_COMMIT = "93cfe16b212d356e271e62c4805433d3a9f19046"
 PHONON_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_phonons"
+# Automatic Resource Selection R1 (plan digest version 2, QOS, resource_selection),
+# recorded from this commit ("Add automatic hardware resource selection R1", on bmd-compute main).
+AUTOMATIC_RESOURCES_BASE_COMMIT = "90d1c2391760af03730769efd1e23285d46f1b30"
+AUTOMATIC_RESOURCES_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_automatic_resources"
+ATTEMPT_AUTOMATIC = "7a1c3e55-0b2d-4f6e-9a81-2c3d4e5f6a7b"
 LOOPBACK = ("127.0.0.1", 50000)
 
 ATTEMPT_MAIN = "6f1d2c3b-4a59-4e68-8b7a-9c0d1e2f3a4b"
@@ -153,6 +158,46 @@ def record_phonons(compute: Path) -> dict:
                              "body": _normalise(response.json())},
             }
             return {"structures": {}, "cases": {"plan_si_poscar_phonons": case}, "tokens": tokens}
+        finally:
+            os.chdir(cwd)
+
+
+def record_automatic_resources(compute: Path) -> dict:
+    with tempfile.TemporaryDirectory(prefix="bmd-run-api-fixtures-") as tmp:
+        cwd = os.getcwd()
+        try:
+            client, tokens, _power, _result, _ledger = _setup(compute, Path(tmp))
+            si = (V1_FIXTURES / "Si.POSCAR").read_text(encoding="utf-8")
+            cases = {}
+
+            def call(name, method, path, token, body, principal):
+                headers = {"Authorization": f"Bearer {tokens[token]}"}
+                response = client.post(path, headers=headers, json=body) if method == "POST" else \
+                    client.put(path, headers=headers, json=body)
+                cases[name] = {
+                    "case": name,
+                    "request": {"method": method, "path": path, "principal": principal, "body": body},
+                    "response": {"status": response.status_code, "content_type": response.headers.get("content-type"),
+                                 "body": _normalise(response.json())},
+                }
+                return response.json()
+
+            def plan(resources=None):
+                body = {"structure": {"format": "poscar", "text": si}, "workflow": {"desired_output": "energy_only"}}
+                if resources is not None:
+                    body["resources"] = resources
+                return body
+
+            p = "/api/v1/plans"
+            automatic = call("plan_si_energy_automatic", "POST", p, "planner", plan(), "planner")
+            call("plan_si_energy_partial", "POST", p, "planner", plan({"cpus": 48}), "planner")
+            call("plan_si_energy_manual_2400h", "POST", p, "planner",
+                 plan({"cpus": 48, "memory_gb": 64, "walltime": "2400:00:00"}), "planner")
+            a = f"/api/v1/attempts/{ATTEMPT_AUTOMATIC}"
+            for name, submit in (("attempt_prepare_automatic", False), ("attempt_submit_automatic", True)):
+                body = {**plan(), "expected_plan_digest": automatic["plan_digest"], "submit": submit}
+                call(name, "PUT", a, "runner", body, "runner")
+            return {"structures": {}, "cases": cases, "tokens": tokens}
         finally:
             os.chdir(cwd)
 
@@ -294,17 +339,24 @@ def _files(recorded: dict, commit: str = REFERENCE_COMMIT) -> dict:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("mode", choices=("record", "compare", "record-phonons", "compare-phonons"))
+    parser.add_argument("mode", choices=("record", "compare", "record-phonons", "compare-phonons",
+                                         "record-automatic-resources", "compare-automatic-resources"))
     parser.add_argument("--compute-checkout", required=True, type=Path)
     args = parser.parse_args(argv)
     compute = args.compute_checkout.resolve()
     phonons = args.mode.endswith("-phonons")
-    reference = PHONON_REFERENCE_COMMIT if phonons else REFERENCE_COMMIT
-    fixtures = PHONON_FIXTURES if phonons else FIXTURES
+    automatic = args.mode.endswith("-automatic-resources")
+    reference = PHONON_REFERENCE_COMMIT if phonons else AUTOMATIC_RESOURCES_BASE_COMMIT if automatic else REFERENCE_COMMIT
+    fixtures = PHONON_FIXTURES if phonons else AUTOMATIC_RESOURCES_FIXTURES if automatic else FIXTURES
     head = subprocess.run(["git", "-C", str(compute), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     if head != reference:
         print(f"warning: Compute checkout is at {head or 'unknown'}, reference is {reference}", file=sys.stderr)
-    files = _files(record_phonons(compute), PHONON_REFERENCE_COMMIT) if phonons else _files(record_all(compute))
+    if phonons:
+        files = _files(record_phonons(compute), PHONON_REFERENCE_COMMIT)
+    elif automatic:
+        files = _files(record_automatic_resources(compute), AUTOMATIC_RESOURCES_BASE_COMMIT)
+    else:
+        files = _files(record_all(compute))
     if args.mode.startswith("record"):
         fixtures.mkdir(parents=True, exist_ok=True)
         for name, text in files.items():

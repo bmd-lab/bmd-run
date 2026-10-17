@@ -209,6 +209,8 @@ def plan_summary(plan: dict) -> dict:
         "stages": [{"stage_type": stage["stage_type"], "theory": stage["theory"],
                     "modifiers": list(stage["modifiers"])} for stage in workflow["stages"]],
         "resources": dict(plan["resources"]),
+        # Compute R1: which resources Compute selected automatically and which were given.
+        **({"resource_sources": dict(plan["resource_selection"]["sources"])} if plan.get("resource_selection") else {}),
     }
 
 
@@ -276,6 +278,8 @@ def cell_row(calculation: Calculation, record: Optional[dict], attempt: Optional
             "walltime_limit": resources["walltime"],
             "partition": resources["partition"],
             "account": resources["account"],
+            **({"qos": resources["qos"]} if "qos" in resources else {}),
+            **({"sources": dict(plan["resource_sources"])} if "resource_sources" in plan else {}),
         },
         "job_id": observed["job_id"] if observed is not None else None,
         "attempt_state": observed["state"] if observed is not None else None,

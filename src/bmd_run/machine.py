@@ -56,7 +56,9 @@ MAX_MODIFIERS = 8
 MAX_OPTIONS_BYTES = 64 * 1024
 
 _IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9_]{0,63}$")
-_WALLTIME = re.compile(r"^[0-9]{1,3}:[0-5][0-9]:[0-5][0-9]$")
+_WALLTIME = re.compile(r"^[0-9]{1,4}:[0-5][0-9]:[0-5][0-9]$")
+# BMD Compute's walltime limit (100 days, the owner100d QOS): 2400:00:00.
+MAX_WALLTIME_SECONDS = 2400 * 3600
 _QUEUE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _PLAN_DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -157,7 +159,9 @@ def resources_request(*, cpus: Optional[str], memory_gb: Optional[str], walltime
         resources[name] = int(value)
     if walltime is not None:
         if not _WALLTIME.match(walltime):
-            raise UsageError("--walltime must be HH:MM:SS.")
+            raise UsageError("--walltime must be H:MM:SS.")
+        if _walltime_seconds(walltime) > MAX_WALLTIME_SECONDS:
+            raise UsageError("--walltime must be at most 2400:00:00.")
         resources["walltime"] = walltime
     if queue is not None:
         if not _QUEUE.match(queue):
@@ -290,8 +294,15 @@ def _job_id(value, field) -> str:
     return str(int(m.group(1))) + (f"_{int(m.group(2))}" if m.group(2) is not None else "")
 
 
+def _walltime_seconds(text: str) -> int:
+    hours, minutes, seconds = (int(part) for part in text.split(":"))
+    return hours * 3600 + minutes * 60 + seconds
+
+
 def _walltime(value, field) -> str:
     _match(value, _WALLTIME, field)
+    if _walltime_seconds(value) > MAX_WALLTIME_SECONDS:
+        raise _FAIL(field)
     hours, minutes, seconds = value.split(":")
     return f"{int(hours):02d}:{minutes}:{seconds}"
 
@@ -317,6 +328,38 @@ def project_resources(value, field="resources") -> dict:
         "walltime": _walltime(resources.get("walltime"), f"{field}.walltime"),
         "partition": _member_or_none(resources.get("partition"), vocab.PARTITIONS),
         "account": _member_or_none(resources.get("account"), vocab.ACCOUNTS),
+        # Compute R1 adds the (server-owned) QOS; older responses have no such key.
+        **({"qos": _member_or_none(resources.get("qos"), vocab.QOS)} if "qos" in resources else {}),
+    }
+
+
+def _resource_selection(value, field) -> Optional[dict]:
+    """Compute's record of which resources were Automatic or manual (no explanation prose)."""
+
+    if value is None:
+        return None
+    selection = _object(value, field)
+    policy = _object(selection.get("policy"), f"{field}.policy")
+    sources = _object(selection.get("sources"), f"{field}.sources")
+    walltime = _object(selection.get("walltime"), f"{field}.walltime")
+    return {
+        "policy": {"id": _member_or_none(policy.get("id"), vocab.RESOURCE_POLICY_IDS),
+                   "version": _int(policy.get("version"), f"{field}.policy.version", 0, 10**6)},
+        "sources": {name: _member_or_none(sources.get(name), vocab.RESOURCE_SOURCES)
+                    for name in vocab.RESOURCE_SOURCE_FIELDS if name in sources},
+        "walltime": {
+            "recommended": _optional(walltime.get("recommended"), _walltime, f"{field}.walltime.recommended"),
+            "basis": _member_or_none(walltime.get("basis"), vocab.WALLTIME_BASES),
+            "stages": [
+                {
+                    "index": _int(stage.get("index"), f"{field}.walltime.stages.index", 1, 64),
+                    "class": _member_or_none(stage.get("class"), vocab.WALLTIME_STAGE_CLASSES),
+                    "seconds": _number(stage.get("seconds"), f"{field}.walltime.stages.seconds", 0, 1e9),
+                }
+                for stage in (_object(item, f"{field}.walltime.stages")
+                              for item in _list(walltime.get("stages"), f"{field}.walltime.stages", 64))
+            ],
+        },
     }
 
 
@@ -591,6 +634,11 @@ def _policies(value, field) -> dict:
         entry = policies.get(name)
         version = entry.get("version") if isinstance(entry, dict) else None
         projected[name] = None if version is None or isinstance(version, bool) or not isinstance(version, int) else _int(version, f"{field}.{name}", 0, 10**6)
+    for name in vocab.OPTIONAL_POLICY_NAMES:  # reported only when Compute has the policy
+        if name in policies:
+            entry = policies.get(name)
+            version = entry.get("version") if isinstance(entry, dict) else None
+            projected[name] = None if version is None or isinstance(version, bool) or not isinstance(version, int) else _int(version, f"{field}.{name}", 0, 10**6)
     return projected
 
 
@@ -628,7 +676,7 @@ def project_plan(document: Any, sent: Mapping[str, Any]) -> dict:
     space_group = structure.get("space_group_number")
     crystal_system = structure.get("crystal_system")
     recipe = workflow.get("recipe")
-    return {
+    projected = {
         "plan_digest": _digest(plan.get("plan_digest"), "plan.plan_digest"),
         "plan_digest_version": _choice(plan.get("plan_digest_version"), vocab.PLAN_DIGEST_VERSIONS, "plan.plan_digest_version"),
         "request": expected,
@@ -660,6 +708,9 @@ def project_plan(document: Any, sent: Mapping[str, Any]) -> dict:
         "capability_schema_version": _int(plan.get("capability_schema_version"), "plan.capability_schema_version", 0, 10**6),
         "unavailable_from_compute_api": list(UNAVAILABLE_FROM_PLAN),
     }
+    if "resource_selection" in plan:  # Compute R1 (plan digest version 2)
+        projected["resource_selection"] = _resource_selection(plan.get("resource_selection"), "plan.resource_selection")
+    return projected
 
 
 def _scheduler(value, field) -> Optional[dict]:

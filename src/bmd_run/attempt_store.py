@@ -397,7 +397,7 @@ _SCHEDULER_KEYS = frozenset({"state", "summary", "elapsed", "exit_code", "starte
 _ERROR_KEYS = frozenset({"stage", "kind", "compute_code", "at"})
 _FORMULA = re.compile(r"^[A-Z][a-z]?[0-9.e+-]*(?: ?[A-Z][a-z]?[0-9.e+-]*){0,119}$")
 _WORD = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
-_WALLTIME = re.compile(r"^[0-9]{1,3}:[0-5][0-9]:[0-5][0-9]$")
+_WALLTIME = re.compile(r"^[0-9]{1,4}:[0-5][0-9]:[0-5][0-9]$")
 _ELAPSED = re.compile(r"^(?:[0-9]{1,4}-)?[0-9]{2}:[0-5][0-9]:[0-5][0-9]$")
 _EXIT = re.compile(r"^[0-9]{1,3}:[0-9]{1,3}$")
 _LOCAL_TIME = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}$")
@@ -451,9 +451,18 @@ def _closed(value, keys) -> bool:
 def _valid_plan(plan) -> bool:
     if plan is None:
         return True
-    if not _closed(plan, _PLAN_KEYS) or not _closed(plan["resources"], _RESOURCE_KEYS):
+    # Optional since Compute's Automatic Resource Selection R1: resources.qos and resource_sources.
+    if not (_closed(plan, _PLAN_KEYS) or _closed(plan, _PLAN_KEYS | {"resource_sources"})):
         return False
     resources, stages = plan["resources"], plan["stages"]
+    if not (_closed(resources, _RESOURCE_KEYS) or _closed(resources, _RESOURCE_KEYS | {"qos"})):
+        return False
+    sources = plan.get("resource_sources", {})
+    if not (isinstance(sources, dict) and set(sources) <= {"cpus", "memory_gb", "walltime", "queue"}
+            and all(value in ("automatic", "manual", None) for value in sources.values())):
+        return False
+    if not _string(resources.get("qos"), _WORD, nullable=True):
+        return False
     return (
         _string(plan["plan_digest"], re.compile(r"^sha256:[0-9a-f]{64}$"))
         and _string(plan["formula"], _FORMULA) and _string(plan["reduced_formula"], _FORMULA)

@@ -72,9 +72,13 @@ command is for. It prints the attempt ID, the SLURM job ID and how to check the 
   Compute's own identifiers; `--custom`/`--custom-workflow` take BMD Compute's Custom
   stage schema. With none, BMD Compute's Energy-only Desired Output is used, as in
   the browser interface. `bmd-run` infers no methodology.
-- **Overrides:** `--cpus`, `--memory-gb`, `--walltime HH:MM:SS` and `--queue` are
-  passed to BMD Compute as given; BMD Compute validates them and fills in everything
-  else. `bmd-run` adds no methodology, defaults or resource choices of its own.
+- **Overrides:** `--cpus`, `--memory-gb`, `--walltime H:MM:SS` (up to four hour
+  digits, e.g. `2400:00:00`) and `--queue` are passed to BMD Compute as given; BMD
+  Compute validates them and fills in everything else. A resource you do not give
+  is not sent, so a BMD Compute with Automatic Resource Selection chooses it; the
+  plan summary then shows the resolved CPUs, memory, walltime and QOS and which of
+  them were selected automatically (also in `--json`, under `resource_selection`).
+  `bmd-run` adds no methodology, defaults or resource choices of its own.
 - **Connection:** `--api-url`, `--token-file`, `--state-dir`, `--timeout` and `--json`
   work as for the `api` commands below (SSH tunnel at `http://127.0.0.1:18000`,
   protected token file).

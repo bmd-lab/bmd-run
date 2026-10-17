@@ -91,7 +91,21 @@ def _resources(resources: dict) -> List[str]:
         f"  CPUs:       {resources['cpus']}",
         f"  Memory:     {resources['memory_gb']} GB",
         f"  Walltime:   {resources['walltime']}",
-    ]
+    ] + ([f"  QOS:        {_show(resources['qos'])}"] if "qos" in resources else [])
+
+
+_WALLTIME_BASES = {"empirical_estimate": "empirical estimate", "conservative_fallback": "conservative fallback"}
+
+
+def _automatic_fields(selection: dict) -> str:
+    names = {"cpus": "CPUs", "memory_gb": "memory", "walltime": "walltime", "queue": "queue"}
+    automatic = [names[k] for k, v in selection["sources"].items() if v == "automatic" and k != "queue"]
+    manual = [names[k] for k, v in selection["sources"].items() if v == "manual"]
+    text = f"automatic: {', '.join(automatic) or 'none'}; given: {', '.join(manual) or 'none'}"
+    basis = selection["walltime"]["basis"]
+    if basis is not None and selection["sources"].get("walltime") == "automatic":
+        text += f" (walltime basis: {_WALLTIME_BASES.get(basis, basis)})"
+    return text
 
 
 def render_plan(plan: dict) -> str:
@@ -126,6 +140,8 @@ def render_plan(plan: dict) -> str:
         if considerations["unrecognized_count"]:
             lines.append(f"  ({considerations['unrecognized_count']} unrecognised consideration(s) not shown)")
     lines += ["", "RESOURCES (resolved by BMD Compute)"] + _resources(plan["resources"])
+    if plan.get("resource_selection"):
+        lines.append(f"  Selection:  {_automatic_fields(plan['resource_selection'])}")
     inputs = plan["scientific_inputs"]
     lines += ["", f"GENERATED INPUTS (POTCAR functional {_show(inputs['potcar_functional'])})"]
     for stage in inputs["stages"]:
@@ -304,9 +320,11 @@ def render_run_plan(plan: dict, structure_file: str) -> str:
         f"Workflow:     {name}",
         f"Stages:       {count} ({'; '.join(_stage_name(stage) for stage in workflow['stages'])})",
         f"Resources:    {resources['nodes']} node(s), {resources['cpus']} CPUs, {resources['memory_gb']} GB, "
-        f"walltime {resources['walltime']}",
+        f"walltime {resources['walltime']}" + (f", QOS {_show(resources['qos'])}" if "qos" in resources else ""),
         f"Plan digest:  {plan['plan_digest']}",
     ]
+    if plan.get("resource_selection"):
+        lines.insert(-1, f"Selection:    {_automatic_fields(plan['resource_selection'])}")
     lines += [f"Phonons:      {_phonon_line(stage['phonon_plan'])}"
               for stage in plan["scientific_inputs"]["stages"] if stage.get("phonon_plan")]
     return "\n".join(lines)
