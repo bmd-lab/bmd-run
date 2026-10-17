@@ -161,7 +161,7 @@
                 },
                 "walltime": {
                   "type": "string",
-                  "pattern": "^[0-9]{2,3}:[0-5][0-9]:[0-5][0-9]$"
+                  "pattern": "^[0-9]{1,4}:[0-5][0-9]:[0-5][0-9]$"
                 },
                 "queue": {
                   "type": "string",
@@ -267,7 +267,7 @@
             },
             "walltime": {
               "type": "string",
-              "pattern": "^[0-9]{2,3}:[0-5][0-9]:[0-5][0-9]$"
+              "pattern": "^[0-9]{1,4}:[0-5][0-9]:[0-5][0-9]$"
             },
             "queue": {
               "type": "string",
@@ -324,7 +324,7 @@
         },
         "walltime": {
           "type": "string",
-          "pattern": "^[0-9]{2,3}:[0-5][0-9]:[0-5][0-9]$"
+          "pattern": "^[0-9]{2,4}:[0-5][0-9]:[0-5][0-9]$"
         },
         "partition": {
           "oneOf": [
@@ -343,6 +343,18 @@
             {
               "enum": [
                 "power-leeburton-users_v2"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "qos": {
+          "oneOf": [
+            {
+              "enum": [
+                "owner100d"
               ]
             },
             {
@@ -916,7 +928,8 @@
         },
         "plan_digest_version": {
           "enum": [
-            1
+            1,
+            2
           ]
         },
         "request": {
@@ -1269,6 +1282,16 @@
                   "type": "null"
                 }
               ]
+            },
+            "automatic_resources": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         },
@@ -1280,6 +1303,16 @@
           "items": {
             "type": "string"
           }
+        },
+        "resource_selection": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/resource_selection"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -1892,6 +1925,170 @@
               "type": "null"
             }
           ]
+        }
+      }
+    },
+    "resource_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "sources",
+        "walltime"
+      ],
+      "properties": {
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version"
+          ],
+          "properties": {
+            "id": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "bmd_compute.automatic_resources"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "version": {
+              "type": "integer"
+            }
+          }
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpus": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "automatic",
+                    "manual"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "memory_gb": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "automatic",
+                    "manual"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "walltime": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "automatic",
+                    "manual"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "automatic",
+                    "manual"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "walltime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "basis",
+            "recommended",
+            "stages"
+          ],
+          "properties": {
+            "recommended": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]{2,4}:[0-5][0-9]:[0-5][0-9]$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "basis": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "empirical_estimate",
+                    "conservative_fallback"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "class",
+                  "index",
+                  "seconds"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer"
+                  },
+                  "class": {
+                    "oneOf": [
+                      {
+                        "enum": [
+                          "calibrated",
+                          "extrapolated",
+                          "hybrid_fallback",
+                          "unknown_fallback"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "seconds": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

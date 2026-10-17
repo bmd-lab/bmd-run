@@ -27,9 +27,9 @@ from bmd_run.errors import ClientError
 
 SCHEMA = json.loads((ROOT / "src" / "bmd_run" / "schemas" / "machine-output-v1.schema.json").read_text(encoding="utf-8"))
 PLANS = ("plan_si_poscar_energy_only", "plan_nio_poscar_electronic_dos", "plan_si_custom_relax_static", "plan_si_cif_energy_only",
-         "plan_si_poscar_phonons")
+         "plan_si_poscar_phonons", "plan_si_energy_automatic")
 ATTEMPTS = ("attempt_get_submitted", "attempt_get_uncertain", "attempt_submit", "attempt_prepare",
-            "attempt_get_labelled_completed")
+            "attempt_get_labelled_completed", "attempt_submit_automatic")
 ERRORS = tuple(
     name for name in (
         "plan_error_structure_invalid", "plan_error_calculation_invalid", "plan_error_invalid_request",

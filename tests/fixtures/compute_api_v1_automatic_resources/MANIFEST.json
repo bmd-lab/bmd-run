@@ -1,0 +1,12 @@
+{
+  "compute_commit": "90d1c2391760af03730769efd1e23285d46f1b30",
+  "files": {
+    "attempt_prepare_automatic.json": "bd8026273c55fc0b263b7cc7508dce49f17f0015488757f9f220ad323b2f1b41",
+    "attempt_submit_automatic.json": "c1a705c5c405d0bc4cc93a2345c713bfa7e478319170215f5fbdd10d82c0ddc2",
+    "plan_si_energy_automatic.json": "95b5dbc20d4bf2654765338e72fac74222f025ac99f802e8512e2526302d1c45",
+    "plan_si_energy_manual_2400h.json": "9b1d6da6619b495db002e2f0c4dbc622d77df41b9ec627b21d6d8396d6aa5e06",
+    "plan_si_energy_partial.json": "b893559099d73796fb320d27128fe071b6d653fdebaac1a28c44a83496776109"
+  },
+  "schema": "bmd_run.compute_api_fixtures",
+  "schema_version": 1
+}

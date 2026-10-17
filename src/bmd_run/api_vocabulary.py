@@ -21,7 +21,7 @@ API_VERSION = "v1"
 PLAN_SCHEMA = "bmd_compute.api.plan"
 ATTEMPT_SCHEMA = "bmd_compute.api.attempt"
 RESPONSE_SCHEMA_VERSION = 1
-PLAN_DIGEST_VERSIONS = (1,)
+PLAN_DIGEST_VERSIONS = (1, 2)  # 2: Automatic Resource Selection R1 (QOS and resource selection)
 
 # The client's request vocabulary (compute_api/schemas.py).
 STRUCTURE_FORMATS = ("poscar", "cif")
@@ -69,6 +69,16 @@ POLICY_NAMES = (
     "runtime_parity",
     "plan_digest",
 )
+
+# Automatic Resource Selection R1 (bmd-compute claude/automatic-resources-r1): reported only
+# when Compute sends them (backend/config.py DEFAULT_QOS, backend/calculations/automatic_resources.py).
+OPTIONAL_POLICY_NAMES = ("automatic_resources",)
+QOS = ("owner100d",)
+RESOURCE_POLICY_IDS = ("bmd_compute.automatic_resources",)
+RESOURCE_SOURCE_FIELDS = ("cpus", "memory_gb", "walltime", "queue")
+RESOURCE_SOURCES = ("automatic", "manual")
+WALLTIME_BASES = ("empirical_estimate", "conservative_fallback")
+WALLTIME_STAGE_CLASSES = ("calibrated", "extrapolated", "hybrid_fallback", "unknown_fallback")
 
 # compute_api/schemas.py LABEL_KEYS (labels set by the client that created an attempt)
 LABEL_KEYS = ("campaign", "cell")

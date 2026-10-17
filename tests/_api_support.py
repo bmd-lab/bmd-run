@@ -31,6 +31,8 @@ from _support import ROOT  # noqa: F401  (puts src/ on sys.path)
 
 API_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1"
 PHONON_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_phonons"  # recorded from bmd-compute 93cfe16
+# Automatic Resource Selection R1 (plan digest version 2); see its RECORDING.md.
+AUTOMATIC_RESOURCES_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_automatic_resources"
 SI_POSCAR = API_FIXTURES / "Si.POSCAR"
 NIO_POSCAR = API_FIXTURES / "NiO.POSCAR"
 SI_CIF = API_FIXTURES / "Si.cif"
@@ -38,8 +40,9 @@ SI_CIF = API_FIXTURES / "Si.cif"
 
 def fixture(name: str) -> dict:
     path = API_FIXTURES / f"{name}.json"
-    if not path.is_file():
-        path = PHONON_FIXTURES / f"{name}.json"
+    for directory in (PHONON_FIXTURES, AUTOMATIC_RESOURCES_FIXTURES):
+        if not path.is_file():
+            path = directory / f"{name}.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -104,6 +107,14 @@ class FakeCompute:
         with self.lock:
             self.tokens[token] = (principal, frozenset(scopes))
         return token
+
+    def serve_plans(self, *names) -> None:
+        """Answer these recorded plans instead (for example a newer Compute's plan for the same request)."""
+
+        with self.lock:
+            for name in names:
+                case = fixture(name)
+                self.plans[canonical(_custom_canonical(case["request"]["body"]))] = case["response"]
 
     def add_fault(self, fault) -> None:
         with self.lock:
