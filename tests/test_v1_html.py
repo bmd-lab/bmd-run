@@ -34,7 +34,9 @@ class Extraction(unittest.TestCase):
                          "label": "PBE Static Energy"}]},
         )
         catalogue = p.option_catalogue()
-        self.assertEqual([d["value"] for d in catalogue["desired_outputs"]], list(vocab.DESIRED_OUTPUTS))
+        # The v1.0.0 menu: every Desired Output it offered (relaxed_energy came later, with Compute E1).
+        self.assertEqual([d["value"] for d in catalogue["desired_outputs"]],
+                         ["energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure", "custom"])
         self.assertEqual(catalogue["unrecognized_entry_count"], 0)
         self.assertIsNone(p.failure_stage())
 

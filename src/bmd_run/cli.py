@@ -52,7 +52,10 @@ API_COMMANDS = ("plan", "prepare", "submit", "status")
 # names can be given as ./NAME.)
 COMMAND_NAMES = ("identity", "options", "analyze", "plan", "api")
 RESERVED_WORDS = ("prepare", "submit", "status", "monitor", "resume", "cancel", "run", "batch", "help")
-DEFAULT_DESIRED_OUTPUT = "energy_only"  # Compute's Energy-only Desired Output, as in the UI
+# The one-command default: Compute's fixed-geometry single-point PBE static. It stays the
+# default although Compute's browser now defaults to relaxed_energy (bmd-compute E1); changing
+# it is a separate product decision. relaxed_energy is requested by its identifier.
+DEFAULT_DESIRED_OUTPUT = "energy_only"
 # Desired Output shortcuts of the one-command interface: BMD Compute's own identifiers
 # (api_vocabulary.DESIRED_OUTPUTS), named as in the Compute UI. No option means DEFAULT_DESIRED_OUTPUT.
 DESIRED_OUTPUT_SHORTCUTS = {

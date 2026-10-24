@@ -48,6 +48,10 @@ PHONON_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_phonons"
 AUTOMATIC_RESOURCES_BASE_COMMIT = "90d1c2391760af03730769efd1e23285d46f1b30"
 AUTOMATIC_RESOURCES_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_automatic_resources"
 ATTEMPT_AUTOMATIC = "7a1c3e55-0b2d-4f6e-9a81-2c3d4e5f6a7b"
+# Relaxed Energy (bmd-compute E1, PR #53), recorded from bmd-compute main at its merge.
+RELAXED_ENERGY_COMMIT = "228cc59502ebc118c3d4128cbce8652e04b88f72"
+RELAXED_ENERGY_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_relaxed_energy"
+ATTEMPT_RELAXED_ENERGY = "8b2d4f66-1c3e-4a7f-8b92-3d4e5f6a7b8c"
 LOOPBACK = ("127.0.0.1", 50000)
 
 ATTEMPT_MAIN = "6f1d2c3b-4a59-4e68-8b7a-9c0d1e2f3a4b"
@@ -202,6 +206,61 @@ def record_automatic_resources(compute: Path) -> dict:
             os.chdir(cwd)
 
 
+def record_relaxed_energy(compute: Path) -> dict:
+    with tempfile.TemporaryDirectory(prefix="bmd-run-api-fixtures-") as tmp:
+        cwd = os.getcwd()
+        try:
+            client, tokens, _power, _result, _ledger = _setup(compute, Path(tmp))
+            si = (V1_FIXTURES / "Si.POSCAR").read_text(encoding="utf-8")
+            nio = (V1_FIXTURES / "NiO.POSCAR").read_text(encoding="utf-8")
+            cases = {}
+
+            def call(name, method, path, principal, body=None):
+                headers = {"Authorization": f"Bearer {tokens[principal]}"}
+                if method == "GET":
+                    response = client.get(path, headers=headers)
+                elif method == "POST":
+                    response = client.post(path, headers=headers, json=body)
+                else:
+                    response = client.put(path, headers=headers, json=body)
+                cases[name] = {
+                    "case": name,
+                    "request": {"method": method, "path": path, "principal": principal, "body": body},
+                    "response": {"status": response.status_code, "content_type": response.headers.get("content-type"),
+                                 "body": _normalise(response.json())},
+                }
+                return response.json()
+
+            def plan(structure, desired_output=None, custom=None, resources=None):
+                workflow = {"custom": custom} if custom is not None else {"desired_output": desired_output}
+                body = {"structure": {"format": "poscar", "text": structure}, "workflow": workflow}
+                if resources is not None:
+                    body["resources"] = resources
+                return body
+
+            def stage(stage_type):
+                return {"stage_type": stage_type, "theory": "pbe", "modifiers": [], "options": {}}
+
+            p = "/api/v1/plans"
+            relaxed = call("plan_si_poscar_relaxed_energy", "POST", p, "planner", plan(si, "relaxed_energy"))
+            call("plan_nio_poscar_relaxed_energy", "POST", p, "planner", plan(nio, "relaxed_energy"))
+            call("plan_si_relaxed_energy_manual", "POST", p, "planner",
+                 plan(si, "relaxed_energy", resources={"cpus": 48, "memory_gb": 64, "walltime": "12:00:00"}))
+            # The historical single point and a Custom workflow shaped like Relaxed Energy, on the same Compute.
+            call("plan_si_poscar_energy_only_e1", "POST", p, "planner", plan(si, "energy_only"))
+            call("plan_si_custom_relax_relax_static", "POST", p, "planner",
+                 plan(si, custom={"stages": [stage("relax"), stage("relax"), stage("static")]}))
+            call("plan_error_unknown_relaxed_energies", "POST", p, "planner", plan(si, "relaxed_energies"))
+            a = f"/api/v1/attempts/{ATTEMPT_RELAXED_ENERGY}"
+            for name, submit in (("attempt_prepare_relaxed_energy", False), ("attempt_submit_relaxed_energy", True)):
+                body = {**plan(si, "relaxed_energy"), "expected_plan_digest": relaxed["plan_digest"], "submit": submit}
+                call(name, "PUT", a, "runner", body)
+            call("attempt_get_relaxed_energy", "GET", a, "runner")
+            return {"structures": {}, "cases": cases, "tokens": tokens}
+        finally:
+            os.chdir(cwd)
+
+
 def _cases(client, tokens, power, RemoteCommandResult, ledger_module) -> dict:
     si, nio, cif = _structures()
     out = {"structures": {"Si.POSCAR": si, "NiO.POSCAR": nio, "Si.cif": cif}, "cases": {}, "tokens": tokens}
@@ -340,14 +399,18 @@ def _files(recorded: dict, commit: str = REFERENCE_COMMIT) -> dict:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("mode", choices=("record", "compare", "record-phonons", "compare-phonons",
-                                         "record-automatic-resources", "compare-automatic-resources"))
+                                         "record-automatic-resources", "compare-automatic-resources",
+                                         "record-relaxed-energy", "compare-relaxed-energy"))
     parser.add_argument("--compute-checkout", required=True, type=Path)
     args = parser.parse_args(argv)
     compute = args.compute_checkout.resolve()
     phonons = args.mode.endswith("-phonons")
     automatic = args.mode.endswith("-automatic-resources")
-    reference = PHONON_REFERENCE_COMMIT if phonons else AUTOMATIC_RESOURCES_BASE_COMMIT if automatic else REFERENCE_COMMIT
-    fixtures = PHONON_FIXTURES if phonons else AUTOMATIC_RESOURCES_FIXTURES if automatic else FIXTURES
+    relaxed = args.mode.endswith("-relaxed-energy")
+    reference = (PHONON_REFERENCE_COMMIT if phonons else AUTOMATIC_RESOURCES_BASE_COMMIT if automatic
+                 else RELAXED_ENERGY_COMMIT if relaxed else REFERENCE_COMMIT)
+    fixtures = (PHONON_FIXTURES if phonons else AUTOMATIC_RESOURCES_FIXTURES if automatic
+                else RELAXED_ENERGY_FIXTURES if relaxed else FIXTURES)
     head = subprocess.run(["git", "-C", str(compute), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     if head != reference:
         print(f"warning: Compute checkout is at {head or 'unknown'}, reference is {reference}", file=sys.stderr)
@@ -355,6 +418,8 @@ def main(argv=None) -> int:
         files = _files(record_phonons(compute), PHONON_REFERENCE_COMMIT)
     elif automatic:
         files = _files(record_automatic_resources(compute), AUTOMATIC_RESOURCES_BASE_COMMIT)
+    elif relaxed:
+        files = _files(record_relaxed_energy(compute), RELAXED_ENERGY_COMMIT)
     else:
         files = _files(record_all(compute))
     if args.mode.startswith("record"):

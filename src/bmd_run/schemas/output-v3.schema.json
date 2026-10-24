@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "bmd_run.output/3",
   "title": "BMD Run output document, schema version 3",
-  "description": "Emitted on stdout by every bmd-run command run with --json, on success and on error. Every object is closed. Every string in 'result' and 'error' is a client constant, a member of the client's closed BMD Compute v1.0.0 vocabulary, or rendered by the client from bounded numbers; no Compute-originated text is relayed. Version 3 replaces versions 1 and 2, which relayed Compute text.",
+  "description": "Emitted on stdout by every bmd-run command run with --json, on success and on error. Every object is closed. Every string in 'result' and 'error' is a client constant, a member of the client's closed BMD Compute vocabulary (v1.0.0 plus later identifiers such as relaxed_energy), or rendered by the client from bounded numbers; no Compute-originated text is relayed. Version 3 replaces versions 1 and 2, which relayed Compute text.",
   "type": "object",
   "required": [
     "schema",
@@ -334,6 +334,7 @@
         "desired_output": {
           "enum": [
             "energy_only",
+            "relaxed_energy",
             "relaxed_structure",
             "electronic_dos",
             "electronic_band_structure",
@@ -515,6 +516,7 @@
                   "value": {
                     "enum": [
                       "energy_only",
+                      "relaxed_energy",
                       "relaxed_structure",
                       "electronic_dos",
                       "electronic_band_structure",
@@ -617,6 +619,7 @@
             "desired_output": {
               "enum": [
                 "energy_only",
+                "relaxed_energy",
                 "relaxed_structure",
                 "electronic_dos",
                 "electronic_band_structure",

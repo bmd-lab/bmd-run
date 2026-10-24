@@ -1,0 +1,40 @@
+{
+  "description": "SHA-256 of each committed fixture, raw and after normalisations N1-N4 (tools/fixtures_v1.py). Regenerate only after an intentional re-recording.",
+  "files": {
+    "NiO.POSCAR": {
+      "sha256": "f7c469390c2b067ea27748b72c9e7f76a5a60a4dc7012acc4d2cad9d14e16691"
+    },
+    "Si.POSCAR": {
+      "sha256": "200b6cc3ba54679a37af83ac12cc8b021699d8239732dbbf0e5958d60a990e38"
+    },
+    "analyze_si.html": {
+      "normalised_sha256": "9e27bad2372faffecf2798657e455eefcb2615d830b163d96194df3783fdd758",
+      "sha256": "9e27bad2372faffecf2798657e455eefcb2615d830b163d96194df3783fdd758"
+    },
+    "build_nio_relaxed_energy.html": {
+      "normalised_sha256": "7988ff2133541080ebcef4c46b99dec1bee722950f6d031b6a8b695fefdc76c6",
+      "sha256": "f628681fc3d4ace6edaa6518af213941b1b6169075c4a4bacafc8c979753b501"
+    },
+    "build_si_energy_only.html": {
+      "normalised_sha256": "2eebf57f20442da38b760a487ad710e69132b2b0a13dc982fadf9477e2be8c00",
+      "sha256": "cff37bb122246f6aebe537f5b1fb75152c44b5a56078d32606455f036306f484"
+    },
+    "build_si_relaxed_energy.html": {
+      "normalised_sha256": "1decbd0df6a133da8b1b9fa4853ade2868afff709c84740a5e3720bad7933fc2",
+      "sha256": "50aa6bcf5ee8ed2dc051c5c8fcb73eb3a5e95ac0e6bc36df1694eb5c52b5235e"
+    },
+    "build_si_unknown.html": {
+      "normalised_sha256": "2f4376a585ea741ad0d780700cbbb13584df5adbaedc87afc44e9f2f0864b891",
+      "sha256": "2f4376a585ea741ad0d780700cbbb13584df5adbaedc87afc44e9f2f0864b891"
+    },
+    "cases.json": {
+      "sha256": "a7b1aa7194331e29fbee762dcc7fea754cd9ac057df5454df842958eed89c9ca"
+    }
+  },
+  "normalisations": [
+    "N1",
+    "N2",
+    "N3",
+    "N4"
+  ]
+}

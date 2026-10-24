@@ -1,0 +1,48 @@
+{
+  "case": "attempt_get_relaxed_energy",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/api/v1/attempts/8b2d4f66-1c3e-4a7f-8b92-3d4e5f6a7b8c",
+    "principal": "runner"
+  },
+  "response": {
+    "body": {
+      "api_version": "v1",
+      "attempt_id": "8b2d4f66-1c3e-4a7f-8b92-3d4e5f6a7b8c",
+      "created_at": "2026-10-10T00:00:00Z",
+      "labels": {},
+      "plan_digest": "sha256:a1849e3790f4c7cbb11d630ec912d3c898ca992488fcf4958c423896649fb9c0",
+      "resources": {
+        "account": "power-leeburton-users_v2",
+        "cpus": 24,
+        "memory_gb": 128,
+        "nodes": 1,
+        "partition": "leeburton-pool",
+        "qos": "owner100d",
+        "walltime": "02:00:00"
+      },
+      "scheduler": {
+        "available": true,
+        "checked_at": "2026-10-10T00:00:00Z",
+        "elapsed": "00:10:00",
+        "ended_at": null,
+        "exit_code": null,
+        "started_at": "2026-10-10T10:00:00",
+        "state": "PENDING",
+        "summary": "PENDING",
+        "terminal": false
+      },
+      "schema": "bmd_compute.api.attempt",
+      "schema_version": 1,
+      "state": "submitted",
+      "submission": {
+        "job_id": "920001",
+        "requested": true,
+        "submitted_at_local": "2026-10-10 00:00:00"
+      }
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

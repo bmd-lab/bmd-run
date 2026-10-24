@@ -24,6 +24,10 @@ Reviewer procedure (see tests/fixtures/compute_v1.0.0/RECORDING.md):
     # After an intentional re-recording, rewrite MANIFEST.json:
     python tools/fixtures_v1.py manifest
 
+Every command takes ``--fixtures DIR`` (default tests/fixtures/compute_v1.0.0)
+to work on another recorded set with its own cases.json and MANIFEST.json, for
+example tests/fixtures/compute_e1_browser (BMD Compute E1, Relaxed Energy).
+
 Normalisations, applied identically to both sides before comparing. Each one
 replaces a value that Compute generates freshly for every request:
 
@@ -74,15 +78,15 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def load_cases() -> list:
-    return json.loads(CASES.read_text(encoding="utf-8"))["cases"]
+def load_cases(directory: Path = FIXTURES) -> list:
+    return json.loads((directory / "cases.json").read_text(encoding="utf-8"))["cases"]
 
 
-def resolve_form(form: dict) -> dict:
+def resolve_form(form: dict, directory: Path = FIXTURES) -> dict:
     resolved = {}
     for key, value in form.items():
         if isinstance(value, str) and value.startswith("@"):
-            value = (FIXTURES / value[1:]).read_text(encoding="utf-8")
+            value = (directory / value[1:]).read_text(encoding="utf-8")
         resolved[key] = value
     return resolved
 
@@ -92,9 +96,10 @@ def capture(args) -> int:
     out.mkdir(parents=True, exist_ok=True)
     transport = Transport(args.compute_url, timeout=args.timeout)
     failures = 0
-    for case in load_cases():
+    directory = Path(args.fixtures)
+    for case in load_cases(directory):
         endpoint = Endpoint[case["endpoint"]]
-        response = transport.request(endpoint, resolve_form(case["form"]) or None)
+        response = transport.request(endpoint, resolve_form(case["form"], directory) or None)
         (out / case["file"]).write_bytes(response.text.encode("utf-8"))
         ok = response.status == case["status"]
         failures += not ok
@@ -105,7 +110,7 @@ def capture(args) -> int:
 def compare(args) -> int:
     left, right = Path(args.left), Path(args.right)
     differences = 0
-    for case in load_cases():
+    for case in load_cases(Path(args.fixtures)):
         a = (left / case["file"]).read_bytes()
         b = (right / case["file"]).read_bytes()
         if a == b:
@@ -121,16 +126,16 @@ def compare(args) -> int:
     return 1 if differences else 0
 
 
-def manifest_entries() -> dict:
+def manifest_entries(directory: Path = FIXTURES) -> dict:
     entries = {}
-    for case in load_cases():
-        data = (FIXTURES / case["file"]).read_bytes()
+    for case in load_cases(directory):
+        data = (directory / case["file"]).read_bytes()
         entries[case["file"]] = {
             "sha256": sha256(data),
             "normalised_sha256": sha256(normalise(data.decode("utf-8")).encode("utf-8")),
         }
     for name in ("Si.POSCAR", "NiO.POSCAR", "cases.json"):
-        entries[name] = {"sha256": sha256((FIXTURES / name).read_bytes())}
+        entries[name] = {"sha256": sha256((directory / name).read_bytes())}
     return entries
 
 
@@ -139,16 +144,18 @@ def write_manifest(args) -> int:
         "description": "SHA-256 of each committed fixture, raw and after normalisations N1-N4 "
                        "(tools/fixtures_v1.py). Regenerate only after an intentional re-recording.",
         "normalisations": [name for name, _, _ in NORMALISATIONS],
-        "files": manifest_entries(),
+        "files": manifest_entries(Path(args.fixtures)),
     }
-    MANIFEST.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"wrote {MANIFEST.relative_to(ROOT)}")
+    manifest = Path(args.fixtures).resolve() / "MANIFEST.json"
+    manifest.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"wrote {manifest.relative_to(ROOT)}")
     return 0
 
 
 def verify(args) -> int:
-    recorded = json.loads(MANIFEST.read_text(encoding="utf-8"))["files"]
-    current = manifest_entries()
+    directory = Path(args.fixtures)
+    recorded = json.loads((directory / "MANIFEST.json").read_text(encoding="utf-8"))["files"]
+    current = manifest_entries(directory)
     bad = sorted(name for name in set(recorded) | set(current) if recorded.get(name) != current.get(name))
     for name in bad:
         print(f"MISMATCH {name}")
@@ -158,6 +165,8 @@ def verify(args) -> int:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--fixtures", default=str(FIXTURES),
+                        help="recorded fixture set (default: tests/fixtures/compute_v1.0.0)")
     commands = parser.add_subparsers(dest="command", required=True)
     p = commands.add_parser("capture", help="request every case from a running Compute v1.0.0")
     p.add_argument("--compute-url", required=True)

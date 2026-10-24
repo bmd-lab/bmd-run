@@ -33,6 +33,8 @@ API_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1"
 PHONON_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_phonons"  # recorded from bmd-compute 93cfe16
 # Automatic Resource Selection R1 (plan digest version 2); see its RECORDING.md.
 AUTOMATIC_RESOURCES_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_automatic_resources"
+# Relaxed Energy (bmd-compute E1, main 228cc59); see its RECORDING.md.
+RELAXED_ENERGY_FIXTURES = ROOT / "tests" / "fixtures" / "compute_api_v1_relaxed_energy"
 SI_POSCAR = API_FIXTURES / "Si.POSCAR"
 NIO_POSCAR = API_FIXTURES / "NiO.POSCAR"
 SI_CIF = API_FIXTURES / "Si.cif"
@@ -40,7 +42,7 @@ SI_CIF = API_FIXTURES / "Si.cif"
 
 def fixture(name: str) -> dict:
     path = API_FIXTURES / f"{name}.json"
-    for directory in (PHONON_FIXTURES, AUTOMATIC_RESOURCES_FIXTURES):
+    for directory in (PHONON_FIXTURES, AUTOMATIC_RESOURCES_FIXTURES, RELAXED_ENERGY_FIXTURES):
         if not path.is_file():
             path = directory / f"{name}.json"
     return json.loads(path.read_text(encoding="utf-8"))
