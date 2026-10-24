@@ -1,0 +1,16 @@
+{
+  "compute_commit": "228cc59502ebc118c3d4128cbce8652e04b88f72",
+  "files": {
+    "attempt_get_relaxed_energy.json": "e841c88789f57cc70df32f70f69c2507cee83d67b23c5bd0d25d3c14f8610204",
+    "attempt_prepare_relaxed_energy.json": "f888a8b0db511ffd963456d5b0e629ade8c0fa1a702d59591c6f5f5daf30ac6b",
+    "attempt_submit_relaxed_energy.json": "8af2d9f7dbf0a5fc8dd6ed67044829e4d60fc67fe71f86c85358e9d128ebf28b",
+    "plan_error_unknown_relaxed_energies.json": "343dd86012a93a6753b39d7369223d3a1b988b738f89b1c34ba6e9c7b831b937",
+    "plan_nio_poscar_relaxed_energy.json": "6af55e2f86f9e710d83fe28e59b3c9bd6ad993a962a3f0b694e4eefa2c2cf848",
+    "plan_si_custom_relax_relax_static.json": "74a38e207fa5a6e8347b128d1d12255c97769fa9b14e19460e511fefa8203ba4",
+    "plan_si_poscar_energy_only_e1.json": "6f37b5c80c1e85265072df3ba1ab0bb524a41f46ec8a6c4d9fdd2cb10cc2b686",
+    "plan_si_poscar_relaxed_energy.json": "3af7719d32b2cd4078e4b0488ce72d55faacc0e835cc95a4e1bd472c3642a891",
+    "plan_si_relaxed_energy_manual.json": "50bb29c7ba90da289702e5922f4dc31d1d36bf6ebaf3035c200dd872fcc04262"
+  },
+  "schema": "bmd_run.compute_api_fixtures",
+  "schema_version": 1
+}

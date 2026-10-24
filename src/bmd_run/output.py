@@ -127,7 +127,7 @@ def render_options(result: dict) -> str:
         lines.append("")
         lines.append(f"{heading}: {', '.join(values) if values else '(none)'}")
     if catalogue["unrecognized_entry_count"]:
-        lines.append(f"({catalogue['unrecognized_entry_count']} catalogue entries not in the v1.0.0 vocabulary were not shown)")
+        lines.append(f"({catalogue['unrecognized_entry_count']} catalogue entries not in the client vocabulary were not shown)")
     lines.append("")
     lines.append(f"Catalogue sha256: {result['catalogue_sha256']}")
     return "\n".join(lines)

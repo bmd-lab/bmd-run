@@ -236,6 +236,7 @@ RUN_SCHEMA = "bmd_run.run_output"
 RUN_SCHEMA_VERSION = 1
 _WORKFLOW_NAMES = {
     "energy_only": "Energy only",
+    "relaxed_energy": "Relaxed Energy",
     "relaxed_structure": "Relaxed structure",
     "electronic_dos": "Electronic density of states",
     "electronic_band_structure": "Electronic band structure",

@@ -129,7 +129,8 @@ own ledger and remote locks guarantee at most one `sbatch` per attempt.
 
 **Output.** As for the v1 adapter, Compute's JSON is untrusted. Results are
 projected into `bmd_run.machine_output` v1 from a closed vocabulary pinned to
-bmd-compute `e3fbb3b` (`api_vocabulary.py`), bounded numbers, and
+bmd-compute `e3fbb3b` (`api_vocabulary.py`; later identifiers such as `phonons` and
+`relaxed_energy` are added member by member, each with recorded fixtures), bounded numbers, and
 pattern-checked digests, job IDs and timestamps. Compute's error messages,
 suggestions, option prose, module names and the space-group symbol are not
 relayed; errors carry client text and the recognised Compute code.
@@ -149,8 +150,10 @@ Consequences:
   failure or uncertainty in Prepare stops the run before any submission;
 - an uncertain submission keeps R1's classification (exit 15) and is never retried;
   running `bmd-run` again deliberately starts a new attempt;
-- the default workflow (Compute's `energy_only` Desired Output) and the shortcut
-  aliases are the only client-side choices, and they are Compute identifiers.
+- the default workflow (Compute's `energy_only` Desired Output, the fixed-geometry
+  single point; it remains bmd-run's default although Compute's browser defaults to
+  `relaxed_energy` since bmd-compute E1) and the shortcut aliases are the only
+  client-side choices, and they are Compute identifiers.
 
 Dispatch is by the first positional argument: the command names `identity`,
 `options`, `analyze`, `plan` and `api`, and reserved words such as `prepare`,

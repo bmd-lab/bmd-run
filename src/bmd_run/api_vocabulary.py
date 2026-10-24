@@ -36,7 +36,11 @@ CRYSTAL_SYSTEMS = v1.CRYSTAL_SYSTEMS
 ELEMENTS = v1.ELEMENTS
 PARTITIONS = v1.PARTITIONS
 ACCOUNTS = v1.ACCOUNTS
-DESIRED_OUTPUTS = ("energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure", "phonons")
+# relaxed_energy: bmd-compute E1 (228cc59), PBE relax -> PBE relax -> PBE static. Compute alone
+# defines its stages; the client only recognises the identifier.
+DESIRED_OUTPUTS = (
+    "energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure", "phonons", "relaxed_energy",
+)
 
 # backend/phonons/workflow.py at bmd-compute 93cfe16 (phonon_plan of a phonon_forces stage)
 PHONON_WORKFLOW_IDS = ("bmd_compute.phonons.atomate2_finite_displacement",)

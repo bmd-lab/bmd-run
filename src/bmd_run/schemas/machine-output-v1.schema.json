@@ -1008,6 +1008,7 @@
                 {
                   "enum": [
                     "energy_only",
+                    "relaxed_energy",
                     "relaxed_structure",
                     "electronic_dos",
                     "electronic_band_structure",

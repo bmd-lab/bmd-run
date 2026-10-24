@@ -20,11 +20,12 @@ The recommended interface is one structure, one command, one BMD Compute calcula
 In a directory that contains a file named `POSCAR`:
 
 ```
-bmd-run              # Energy only (BMD Compute's default Desired Output)
+bmd-run              # Energy only: a single-point PBE static on the structure as given
 bmd-run --relax      # Relaxed structure
 bmd-run --dos        # Electronic DOS
 bmd-run --bands      # Electronic band structure
 bmd-run --custom workflow.json
+bmd-run --desired-output relaxed_energy   # Relaxed Energy (two relaxations, then a static)
 ```
 
 Or name the structure file, with optional overrides:
@@ -43,7 +44,15 @@ bmd-run Si.vasp --custom-workflow workflow.json
 | `--dos` | Desired Output `electronic_dos` |
 | `--bands` | Desired Output `electronic_band_structure` |
 | `--custom FILE` | Custom workflow from FILE (same as `--custom-workflow FILE`) |
-| `--desired-output ID` | any Desired Output identifier (for example `phonons`), or `energy`/`relax`/`dos`/`bands` |
+| `--desired-output ID` | any Desired Output identifier (for example `relaxed_energy` or `phonons`), or `energy`/`relax`/`dos`/`bands` |
+
+With no option, `bmd-run` requests `energy_only`, BMD Compute's fixed-geometry
+single-point static. This is bmd-run's own default and it is unchanged: since
+bmd-compute E1 the Compute *browser* defaults to `relaxed_energy` (PBE geometry
+optimisation, again, then an accurate PBE static) and no longer lists Energy only in
+its menu, but `energy_only` keeps its meaning for the machine API, bmd-run and past
+calculations. Ask for Relaxed Energy by its identifier, `--desired-output
+relaxed_energy`; it has no shortcut or alias.
 
 Only one workflow option may be given; combining any two (for example `--relax --dos`
 or `--dos --desired-output energy`) is an error and nothing is sent.
@@ -304,7 +313,8 @@ identifiers:
 | `dos` | `electronic_dos` |
 | `bands` | `electronic_band_structure` |
 
-Any other identifier is sent as typed, and Compute accepts or rejects it. Under
+Any other identifier (for example `relaxed_energy`) is sent as typed, and Compute
+accepts or rejects it. Under
 v1.0.0, `dos` resolves to **PBE geometry optimisation → HSE06 static → HSE06 DOS**,
 which is why `plan` prints the resolved workflow and resources first.
 

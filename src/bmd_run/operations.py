@@ -210,7 +210,7 @@ def options(transport: Transport) -> dict:
         "source": (
             "BMD Compute calculation_form_options() as rendered on the v1 Analyze page "
             "(obtained by analyzing the client's fixed probe structure); values recognised "
-            "against the client's closed v1.0.0 vocabulary, labels are the client's own"
+            "against the client's closed vocabulary (BMD Compute v1.0.0 plus relaxed_energy), labels are the client's own"
         ),
         "catalogue_sha256": canonical_sha256(page.raw_option_catalogue()),
         "catalogue": page.option_catalogue(),

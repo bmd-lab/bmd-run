@@ -1,0 +1,12 @@
+{
+  "description": "Requests that produce the recorded BMD Compute E1 browser fixtures (Relaxed Energy). Read by tools/fixtures_v1.py --fixtures tests/fixtures/compute_e1_browser. '@NAME' means the contents of fixture file NAME.",
+  "compute_release": "main after E1 (PR #53)",
+  "compute_commit": "228cc59502ebc118c3d4128cbce8652e04b88f72",
+  "cases": [
+    {"file": "analyze_si.html", "endpoint": "ANALYZE", "form": {"structure": "@Si.POSCAR", "fmt": "poscar"}, "status": 200},
+    {"file": "build_si_relaxed_energy.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "relaxed_energy"}, "status": 200},
+    {"file": "build_nio_relaxed_energy.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@NiO.POSCAR", "fmt": "poscar", "workflow": "relaxed_energy"}, "status": 200},
+    {"file": "build_si_energy_only.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "energy_only"}, "status": 200},
+    {"file": "build_si_unknown.html", "endpoint": "BUILD_WORKFLOW", "form": {"structure": "@Si.POSCAR", "fmt": "poscar", "workflow": "relaxed_energies"}, "status": 400}
+  ]
+}

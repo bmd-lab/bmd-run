@@ -6,7 +6,9 @@ equals a member exactly. The client then outputs its own copy of that member,
 never the string it received.
 
 These sets name the identifiers BMD Compute v1.0.0 publishes (sources noted
-for commit a746155). They are used only to recognise values. The client makes
+for commit a746155), plus the identifiers later Compute pages publish where
+noted (``relaxed_energy``: bmd-compute E1, 228cc59). They are used only to
+recognise values. The client makes
 no scientific decision with them: which stages, theories, modifiers or
 resources apply is decided by Compute.
 """
@@ -15,8 +17,12 @@ from __future__ import annotations
 
 from types import MappingProxyType
 
-# backend/calculations/registry.py desired_output_workflow_spec / calculation_form_options
-DESIRED_OUTPUTS = ("energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure", "custom")
+# backend/calculations/registry.py desired_output_workflow_spec / calculation_form_options.
+# relaxed_energy (bmd-compute E1, 228cc59) is the Compute browser's default Desired Output
+# from E1 on; energy_only stays a valid identifier there (no longer in the browser menu).
+DESIRED_OUTPUTS = (
+    "energy_only", "relaxed_structure", "electronic_dos", "electronic_band_structure", "custom", "relaxed_energy",
+)
 # backend/calculations/models.py StageType, Theory, Modifier
 STAGE_TYPES = ("relax", "static", "dos", "band_structure")
 THEORIES = ("pbe", "r2scan", "hse06")
@@ -40,6 +46,7 @@ KPOINT_COORDINATE_MODES = MappingProxyType({"reciprocal": "reciprocal", "cartesi
 # Client-owned labels (presentation only).
 DESIRED_OUTPUT_LABELS = MappingProxyType({
     "energy_only": "Energy",
+    "relaxed_energy": "Relaxed Energy",
     "relaxed_structure": "Relaxed structure",
     "electronic_dos": "Electronic density of states",
     "electronic_band_structure": "Electronic band structure",
