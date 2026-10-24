@@ -11,5 +11,8 @@ valid; the client only checks the shape of its own CLI arguments and requests.
 
 __all__ = ["__version__", "CLIENT_NAME"]
 
-__version__ = "0.1.0"
+# Keep equal to [project] version in pyproject.toml (tests/test_version_identity.py).
+# Releases v0.1.0 and v0.2.0 both reported "0.1.0"; this is the first release whose
+# reported version matches its tag (v0.3.0).
+__version__ = "0.3.0"
 CLIENT_NAME = "bmd-run"

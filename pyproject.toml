@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bmd-run"
-version = "0.1.0"
-description = "Restricted read/build-only user-level client for bmd-compute (frozen v1.0.0 proof of concept)"
+version = "0.3.0"
+description = "Restricted, deterministic, user-level client for bmd-compute"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}

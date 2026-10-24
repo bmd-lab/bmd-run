@@ -318,6 +318,19 @@ accepts or rejects it. Under
 v1.0.0, `dos` resolves to **PBE geometry optimisation → HSE06 static → HSE06 DOS**,
 which is why `plan` prints the resolved workflow and resources first.
 
+### Version identity
+
+`bmd-run --version`, the HTTP `User-Agent` (`bmd-run/<version>`), `client.version` in
+every `--json` document and the installed package metadata (`pip show bmd-run`) all
+report the same version, kept equal to `pyproject.toml` by `tests/test_version_identity.py`.
+From v0.3.0 on, that version matches the release tag.
+
+Earlier releases did not: installations of **v0.1.0 and v0.2.0 both report `0.1.0`**
+(the package version was not raised for v0.2.0). An installation reporting `0.1.0` can
+therefore be either release; identify it by the source commit it was installed from
+(for example the checkout's `git rev-parse HEAD`, or `direct_url.json` in the installed
+distribution when pip recorded one), not by its version.
+
 ## Authenticated machine API (`bmd-run api`, Milestone R1)
 
 ```
@@ -524,8 +537,11 @@ The suite includes:
   UUID groups, HTML entities, percent-encoded, reversed, hex, base32,
   interleaved with client words, and zero-width-joined.
 - an installed-wheel smoke test that builds from a clean source copy, installs
-  into a fresh environment, checks `bmd-run --help` / `--version`, imports
-  `bmd_run`, and inspects wheel contents;
+  into a fresh environment, checks `bmd-run --help` / `--version` and the installed
+  package version, imports `bmd_run`, and inspects wheel contents;
+- a version-identity check that `pyproject.toml`, `bmd_run.__version__`,
+  `--version`, both transports' `User-Agent` and `client.version` in every JSON
+  document agree;
 - for `bmd-run api`: a fake BMD Compute served over real HTTP on 127.0.0.1 from
   responses recorded from bmd-compute `e3fbb3b` with Compute's own in-memory fake
   POWER (`tests/fixtures/compute_api_v1/`, `tools/record_machine_api_fixtures.py`).
