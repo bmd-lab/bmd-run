@@ -74,6 +74,7 @@ class InstalledWheelSmoke(unittest.TestCase):
             )
             wheels = sorted(wheelhouse.glob("bmd_run-*.whl"))
             self.assertEqual(len(wheels), 1, [path.name for path in wheelhouse.glob("*.whl")])
+            self.assertTrue(wheels[0].name.startswith("bmd_run-0.3.0-"), wheels[0].name)
             wheel = wheels[0]
 
             with zipfile.ZipFile(wheel) as archive:
@@ -139,6 +140,13 @@ class InstalledWheelSmoke(unittest.TestCase):
                 env=env,
             )
             self.assertEqual(json.loads(metadata_result.stdout), EXPECTED_ENTRY_POINTS)
+            installed_version = _run(
+                [python, "-c", "import importlib.metadata, bmd_run; "
+                               "print(importlib.metadata.version('bmd-run')); print(bmd_run.__version__)"],
+                cwd=tmp,
+                env=env,
+            )
+            self.assertEqual(installed_version.stdout.splitlines(), ["0.3.0", "0.3.0"])
 
             bmd_run = scripts / ("bmd-run.exe" if os.name == "nt" else "bmd-run")
             self.assertTrue(bmd_run.exists(), sorted(path.name for path in scripts.iterdir()))
@@ -154,7 +162,7 @@ class InstalledWheelSmoke(unittest.TestCase):
             self.assertIn("bmd-run batch status MANIFEST", batch_help.stdout)
 
             version_result = _run([bmd_run, "--version"], cwd=tmp, env=env)
-            self.assertRegex(version_result.stdout, r"^bmd-run 0\.1\.0\s*$")
+            self.assertRegex(version_result.stdout, r"^bmd-run 0\.3\.0\s*$")
 
             import_result = _run(
                 [
